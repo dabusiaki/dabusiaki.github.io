@@ -1,42 +1,36 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zadania Rodzinki</title>
-  <link rel="stylesheet" href="styles.css"> <!-- Dodany link do CSS -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-  <script defer src="script.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rodzina Taski</title>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Zadania Rodzinki</h1>
-  
-  <!-- Przyciski logowania i wylogowania -->
-  <div id="authButtons">
     <div id="login">
-      <h2>Logowanie</h2>
-      <form id="loginForm">
-        <input type="text" id="username" placeholder="Nazwa użytkownika" required>
-        <input type="password" id="password" placeholder="Hasło" required>
-        <button type="submit">Zaloguj się</button>
-      </form>
+        <h2>Logowanie</h2>
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Nazwa użytkownika" required>
+            <input type="password" id="password" placeholder="Hasło" required>
+            <button type="submit">Zaloguj</button>
+        </form>
     </div>
-    <div id="loggedInAs" style="display: none; margin-right: 10px;"></div>
-    <button id="logoutBtn" style="display: none;">Wyloguj</button>
-  </div>
 
-  <!-- Sekcja zarządzania zadaniami -->
-  <div id="taskManager" style="display: none;">
-    <h2>Zadania</h2>
-    <ul id="taskList"></ul>
+    <div id="taskManager" style="display:none;">
+        <h2>Zarządzanie Zadaniami</h2>
+        <div id="loggedInAs" style="display:none;"></div>
+        <button id="logoutBtn" style="display:none;">Wyloguj</button>
+        
+        <div id="addTaskForm" style="display:none;">
+            <input type="text" id="newTask" placeholder="Nowe zadanie">
+            <button id="addTaskBtn">Dodaj zadanie</button>
+        </div>
 
-    <!-- Formularz dodawania nowych zadań dla Taty i Mamy -->
-    <div id="addTaskForm" style="display: none;">
-      <h3>Dodaj nowe zadanie</h3>
-      <input type="text" id="newTask" placeholder="Nowe zadanie">
-      <button id="addTaskBtn">Dodaj zadanie</button>
+        <ul id="taskList"></ul>
     </div>
-  </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
