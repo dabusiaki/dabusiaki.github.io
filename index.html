@@ -11,14 +11,17 @@
 <body>
   <h1>Zadania Rodzinki</h1>
   
-  <!-- Formularz logowania -->
-  <div id="login">
-    <h2>Logowanie</h2>
-    <form id="loginForm">
-      <input type="text" id="username" placeholder="Nazwa użytkownika" required>
-      <input type="password" id="password" placeholder="Hasło" required>
-      <button type="submit">Zaloguj się</button>
-    </form>
+  <!-- Przyciski logowania i wylogowania -->
+  <div id="authButtons">
+    <div id="login">
+      <h2>Logowanie</h2>
+      <form id="loginForm">
+        <input type="text" id="username" placeholder="Nazwa użytkownika" required>
+        <input type="password" id="password" placeholder="Hasło" required>
+        <button type="submit">Zaloguj się</button>
+      </form>
+    </div>
+    <button id="logoutBtn" style="display: none;">Wyloguj</button>
   </div>
 
   <!-- Sekcja zarządzania zadaniami -->
