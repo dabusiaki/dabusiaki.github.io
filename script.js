@@ -12,7 +12,21 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
+// Przywrócenie użytkownika po odświeżeniu strony
 let currentUser = localStorage.getItem('currentUser');
+if (currentUser) {
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('taskManager').style.display = 'block';
+  document.getElementById('loggedInAs').innerText = `Zalogowano jako: ${currentUser}`;
+  document.getElementById('loggedInAs').style.display = 'block';
+  document.getElementById('logoutBtn').style.display = 'inline';
+  loadTasks();  // Załaduj zadania
+  if (currentUser === 'Tata' || currentUser === 'Mama') {
+    document.getElementById('addTaskForm').style.display = 'block';
+  } else {
+    document.getElementById('addTaskForm').style.display = 'none';
+  }
+}
 
 // Obsługa logowania
 document.getElementById('loginForm').addEventListener('submit', function(e) {
@@ -29,21 +43,23 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     
     alert('Zalogowano jako ' + username);
     currentUser = username;
-    localStorage.setItem('currentUser', username);
-    document.getElementById('login').style.display = 'none';
-    document.getElementById('taskManager').style.display = 'block';
-    
-    document.getElementById('loggedInAs').innerText = `Zalogowano jako: ${username}`;
-    document.getElementById('loggedInAs').style.display = 'block';
+    localStorage.setItem('currentUser', username);  // Zapisz użytkownika w localStorage
+    document.getElementById('login').style.display = 'none';  // Ukrycie sekcji logowania
+    document.getElementById('taskManager').style.display = 'block';  // Wyświetlenie sekcji zarządzania zadaniami
 
+    // Wyświetl informację o zalogowanym użytkowniku
+    document.getElementById('loggedInAs').innerText = `Zalogowano jako: ${username}`;
+    document.getElementById('loggedInAs').style.display = 'block';  // Pokaż informację o zalogowanym użytkowniku
+
+    // Jeśli Tata lub Mama, pokaż formularz dodawania zadań
     if (username === 'Tata' || username === 'Mama') {
       document.getElementById('addTaskForm').style.display = 'block';
     } else {
-      document.getElementById('addTaskForm').style.display = 'none';
+      document.getElementById('addTaskForm').style.display = 'none'; // Ukryj formularz dodawania zadań dla dzieci
     }
 
-    loadTasks();
-    document.getElementById('logoutBtn').style.display = 'inline';
+    loadTasks();  // Załaduj zadania z Firestore
+    document.getElementById('logoutBtn').style.display = 'inline';  // Pokaż przycisk wylogowania
   } else {
     alert('Błędne dane logowania');
   }
@@ -52,19 +68,19 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
 // Wylogowywanie
 document.getElementById('logoutBtn').addEventListener('click', function() {
   currentUser = null;
-  localStorage.removeItem('currentUser');
-  document.getElementById('login').style.display = 'block';
-  document.getElementById('taskManager').style.display = 'none';
-  document.getElementById('addTaskForm').style.display = 'none';
-  document.getElementById('logoutBtn').style.display = 'none';
-  document.getElementById('loggedInAs').style.display = 'none';
+  localStorage.removeItem('currentUser');  // Usuń użytkownika z localStorage
+  document.getElementById('login').style.display = 'block';  // Pokaż sekcję logowania
+  document.getElementById('taskManager').style.display = 'none';  // Ukryj sekcję zarządzania zadaniami
+  document.getElementById('addTaskForm').style.display = 'none';  // Ukryj formularz dodawania zadań
+  document.getElementById('logoutBtn').style.display = 'none';  // Ukryj przycisk wylogowania
+  document.getElementById('loggedInAs').style.display = 'none';  // Ukryj informację o zalogowanym użytkowniku
 });
 
 // Funkcja do ładowania zadań z Firestore
 function loadTasks() {
   db.collection('tasks').onSnapshot((snapshot) => {
     const taskList = document.getElementById('taskList');
-    taskList.innerHTML = '';
+    taskList.innerHTML = '';  // Wyczyść listę przed dodaniem nowych zadań
     snapshot.forEach(doc => {
       const data = doc.data();
       const li = document.createElement('li');
@@ -107,7 +123,7 @@ document.getElementById('addTaskBtn').addEventListener('click', () => {
       completed: false,  // Ustaw zadanie jako niewykonane
       completedBy: null  // Na początku brak informacji o tym, kto wykonał zadanie
     }).then(() => {
-      document.getElementById('newTask').value = '';
+      document.getElementById('newTask').value = '';  // Wyczyść pole po dodaniu
       alert('Zadanie dodane');
     }).catch((error) => {
       console.error('Błąd przy dodawaniu zadania: ', error);
