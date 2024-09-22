@@ -60,8 +60,7 @@ document.getElementById('logoutBtn').addEventListener('click', function() {
   document.getElementById('loggedInAs').style.display = 'none';  // Ukryj informację o zalogowanym użytkowniku
 });
 
-// Funkcja do ładowania zadań z Firestore (dodaj tutaj logikę ładowania zadań)
-
+// Funkcja do ładowania zadań z Firestore
 function loadTasks() {
   db.collection('tasks').onSnapshot((snapshot) => {
     const taskList = document.getElementById('taskList');
@@ -78,8 +77,7 @@ function loadTasks() {
   });
 }
 
-// Funkcja do dodawania zadań (dodaj tutaj logikę dodawania zadań)
-
+// Funkcja do dodawania zadań
 document.getElementById('addTaskBtn').addEventListener('click', () => {
   const newTask = document.getElementById('newTask').value;
   if (newTask) {
