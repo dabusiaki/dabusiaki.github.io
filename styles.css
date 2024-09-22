@@ -1,0 +1,80 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  margin: 0;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+  color: #333;
+}
+
+#authButtons {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+#login {
+  margin-right: 20px;
+}
+
+input[type="text"],
+input[type="password"] {
+  padding: 10px;
+  margin: 5px 0;
+  width: 200px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  background-color: #28a745;
+  color: white;
+  cursor: pointer;
+  margin-left: 5px;
+}
+
+button:hover {
+  background-color: #218838;
+}
+
+#taskManager {
+  margin-top: 20px;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  background-color: white;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+li button {
+  background-color: #dc3545;
+}
+
+li button:hover {
+  background-color: #c82333;
+}
+
+#logoutBtn {
+  background-color: #007bff;
+}
+
+#logoutBtn:hover {
+  background-color: #0056b3;
+}
