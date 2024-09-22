@@ -70,7 +70,13 @@ function loadTasks() {
     snapshot.forEach(doc => {
       const li = document.createElement('li');
       li.textContent = doc.data().task;  // Upewnij się, że masz pole 'task' w dokumentach
-      
+
+      // Dodaj checkbox do odznaczania zadań jako wykonane
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.onclick = () => markTaskAsDone(doc.id);
+      li.prepend(checkbox);
+
       // Dodaj przycisk do usuwania tylko dla rodziców
       if (currentUser === 'Tata' || currentUser === 'Mama') {
         const deleteBtn = document.createElement('button');
@@ -78,7 +84,7 @@ function loadTasks() {
         deleteBtn.onclick = () => deleteTask(doc.id);
         li.appendChild(deleteBtn);
       }
-      
+
       taskList.appendChild(li);
     });
   });
@@ -107,5 +113,16 @@ function deleteTask(taskId) {
     alert('Zadanie usunięte');
   }).catch((error) => {
     console.error('Błąd przy usuwaniu zadania: ', error);
+  });
+}
+
+// Funkcja do oznaczania zadań jako wykonane
+function markTaskAsDone(taskId) {
+  db.collection('tasks').doc(taskId).update({
+    completed: true  // Upewnij się, że dodasz pole 'completed' w dokumentach
+  }).then(() => {
+    alert('Zadanie oznaczone jako wykonane');
+  }).catch((error) => {
+    console.error('Błąd przy oznaczaniu zadania jako wykonane: ', error);
   });
 }
