@@ -16,7 +16,7 @@ let currentUser = localStorage.getItem('currentUser');
 
 // Obsługa logowania
 document.getElementById('loginForm').addEventListener('submit', function(e) {
-  e.preventDefault();  // Zapobiega odświeżeniu strony po wysłaniu formularza
+  e.preventDefault();
 
   const username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
@@ -28,24 +28,22 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
       (username === 'Agatka' && password === 'Aga123')) {
     
     alert('Zalogowano jako ' + username);
-    currentUser = username;  // Przypisanie zalogowanego użytkownika
-    localStorage.setItem('currentUser', username);  // Zapisz użytkownika w localStorage
-    document.getElementById('login').style.display = 'none';  // Ukrycie sekcji logowania
-    document.getElementById('taskManager').style.display = 'block';  // Wyświetlenie sekcji zarządzania zadaniami
-
-    // Wyświetl informację o zalogowanym użytkowniku
+    currentUser = username;
+    localStorage.setItem('currentUser', username);
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('taskManager').style.display = 'block';
+    
     document.getElementById('loggedInAs').innerText = `Zalogowano jako: ${username}`;
-    document.getElementById('loggedInAs').style.display = 'block';  // Pokaż informację o zalogowanym użytkowniku
+    document.getElementById('loggedInAs').style.display = 'block';
 
-    // Jeśli Tata lub Mama, pokaż formularz dodawania zadań
     if (username === 'Tata' || username === 'Mama') {
       document.getElementById('addTaskForm').style.display = 'block';
     } else {
-      document.getElementById('addTaskForm').style.display = 'none'; // Ukryj formularz dodawania zadań dla dzieci
+      document.getElementById('addTaskForm').style.display = 'none';
     }
 
-    loadTasks();  // Załaduj zadania z Firestore
-    document.getElementById('logoutBtn').style.display = 'inline';  // Pokaż przycisk wylogowania
+    loadTasks();
+    document.getElementById('logoutBtn').style.display = 'inline';
   } else {
     alert('Błędne dane logowania');
   }
@@ -54,28 +52,37 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
 // Wylogowywanie
 document.getElementById('logoutBtn').addEventListener('click', function() {
   currentUser = null;
-  localStorage.removeItem('currentUser');  // Usuń użytkownika z localStorage
-  document.getElementById('login').style.display = 'block';  // Pokaż sekcję logowania
-  document.getElementById('taskManager').style.display = 'none';  // Ukryj sekcję zarządzania zadaniami
-  document.getElementById('addTaskForm').style.display = 'none';  // Ukryj formularz dodawania zadań
-  document.getElementById('logoutBtn').style.display = 'none';  // Ukryj przycisk wylogowania
-  document.getElementById('loggedInAs').style.display = 'none';  // Ukryj informację o zalogowanym użytkowniku
+  localStorage.removeItem('currentUser');
+  document.getElementById('login').style.display = 'block';
+  document.getElementById('taskManager').style.display = 'none';
+  document.getElementById('addTaskForm').style.display = 'none';
+  document.getElementById('logoutBtn').style.display = 'none';
+  document.getElementById('loggedInAs').style.display = 'none';
 });
 
 // Funkcja do ładowania zadań z Firestore
 function loadTasks() {
   db.collection('tasks').onSnapshot((snapshot) => {
     const taskList = document.getElementById('taskList');
-    taskList.innerHTML = '';  // Wyczyść listę przed dodaniem nowych zadań
+    taskList.innerHTML = '';
     snapshot.forEach(doc => {
+      const data = doc.data();
       const li = document.createElement('li');
-      li.textContent = doc.data().task;  // Upewnij się, że masz pole 'task' w dokumentach
+      li.textContent = `${data.task} (Dodane przez: ${data.addedBy})`;
+
+      if (data.completed) {
+        li.style.textDecoration = 'line-through';  // Oznacz zadanie jako wykonane
+        li.textContent += ` (Wykonane przez: ${data.completedBy})`;
+      }
 
       // Dodaj checkbox do odznaczania zadań jako wykonane
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.onclick = () => markTaskAsDone(doc.id);
-      li.prepend(checkbox);
+      if (currentUser === 'Kuba' || currentUser === 'Agatka') {
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = data.completed;
+        checkbox.onclick = () => markTaskAsDone(doc.id);
+        li.prepend(checkbox);
+      }
 
       // Dodaj przycisk do usuwania tylko dla rodziców
       if (currentUser === 'Tata' || currentUser === 'Mama') {
@@ -95,9 +102,12 @@ document.getElementById('addTaskBtn').addEventListener('click', () => {
   const newTask = document.getElementById('newTask').value;
   if (newTask && (currentUser === 'Tata' || currentUser === 'Mama')) {
     db.collection('tasks').add({
-      task: newTask
+      task: newTask,
+      addedBy: currentUser,  // Zapisz, kto dodał zadanie
+      completed: false,  // Ustaw zadanie jako niewykonane
+      completedBy: null  // Na początku brak informacji o tym, kto wykonał zadanie
     }).then(() => {
-      document.getElementById('newTask').value = '';  // Wyczyść pole po dodaniu
+      document.getElementById('newTask').value = '';
       alert('Zadanie dodane');
     }).catch((error) => {
       console.error('Błąd przy dodawaniu zadania: ', error);
@@ -119,7 +129,8 @@ function deleteTask(taskId) {
 // Funkcja do oznaczania zadań jako wykonane
 function markTaskAsDone(taskId) {
   db.collection('tasks').doc(taskId).update({
-    completed: true  // Upewnij się, że dodasz pole 'completed' w dokumentach
+    completed: true,
+    completedBy: currentUser  // Zapisz, kto wykonał zadanie
   }).then(() => {
     alert('Zadanie oznaczone jako wykonane');
   }).catch((error) => {
