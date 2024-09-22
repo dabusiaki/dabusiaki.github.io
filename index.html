@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zadania Rodzinki</title>
+  <!-- Dodaj skrypty Firebase -->
   <script defer src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
   <script defer src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
   <script defer src="script.js"></script>
@@ -11,6 +12,7 @@
 <body>
   <h1>Zadania Rodzinki</h1>
   
+  <!-- Formularz logowania -->
   <div id="login">
     <h2>Logowanie</h2>
     <form id="loginForm">
@@ -20,10 +22,12 @@
     </form>
   </div>
 
+  <!-- Sekcja zarządzania zadaniami -->
   <div id="taskManager" style="display: none;">
     <h2>Zadania</h2>
     <ul id="taskList"></ul>
 
+    <!-- Formularz dodawania nowych zadań dla Taty i Mamy -->
     <div id="addTaskForm" style="display: none;">
       <h3>Dodaj nowe zadanie</h3>
       <input type="text" id="newTask" placeholder="Nowe zadanie">
