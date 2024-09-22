@@ -1,4 +1,4 @@
-// Konfiguracja Firebase
+// Inicjalizacja Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
   authDomain: "rodzinkataski.firebaseapp.com",
@@ -9,26 +9,10 @@ const firebaseConfig = {
   measurementId: "G-JM7KL8KDEC"
 };
 
-// Inicjalizacja Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-let currentUser = null;  // Zmienna przechowująca aktualnie zalogowanego użytkownika
-
-// Sprawdzenie, czy użytkownik był wcześniej zalogowany
-window.onload = function() {
-  const storedUser = localStorage.getItem('currentUser');
-  if (storedUser) {
-    currentUser = storedUser;
-    document.getElementById('login').style.display = 'none';
-    document.getElementById('taskManager').style.display = 'block';
-    if (currentUser === 'Tata' || currentUser === 'Mama') {
-      document.getElementById('addTaskForm').style.display = 'block';
-    }
-    loadTasks();  // Załaduj zadania z Firestore
-    document.getElementById('logoutBtn').style.display = 'inline';  // Pokaż przycisk wylogowania
-  }
-};
+let currentUser = localStorage.getItem('currentUser');
 
 // Obsługa logowania
 document.getElementById('loginForm').addEventListener('submit', function(e) {
@@ -48,7 +32,11 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     localStorage.setItem('currentUser', username);  // Zapisz użytkownika w localStorage
     document.getElementById('login').style.display = 'none';  // Ukrycie sekcji logowania
     document.getElementById('taskManager').style.display = 'block';  // Wyświetlenie sekcji zarządzania zadaniami
-    
+
+    // Wyświetl informację o zalogowanym użytkowniku
+    document.getElementById('loggedInAs').innerText = `Zalogowano jako: ${username}`;
+    document.getElementById('loggedInAs').style.display = 'block';  // Pokaż informację o zalogowanym użytkowniku
+
     // Jeśli Tata lub Mama, pokaż formularz dodawania zadań
     if (username === 'Tata' || username === 'Mama') {
       document.getElementById('addTaskForm').style.display = 'block';
@@ -69,70 +57,44 @@ document.getElementById('logoutBtn').addEventListener('click', function() {
   document.getElementById('taskManager').style.display = 'none';  // Ukryj sekcję zarządzania zadaniami
   document.getElementById('addTaskForm').style.display = 'none';  // Ukryj formularz dodawania zadań
   document.getElementById('logoutBtn').style.display = 'none';  // Ukryj przycisk wylogowania
+  document.getElementById('loggedInAs').style.display = 'none';  // Ukryj informację o zalogowanym użytkowniku
 });
 
-// Dodawanie nowego zadania (tylko dla Taty i Mamy)
-document.getElementById('addTaskBtn').addEventListener('click', function() {
-  const taskName = document.getElementById('newTask').value;
-  if (taskName) {
-    db.collection('tasks').add({
-      name: taskName,
-      done: false,  // Domyślnie zadanie nie jest wykonane
-      addedBy: currentUser  // Zapisanie, kto dodał zadanie
-    }).then(() => {
-      document.getElementById('newTask').value = '';  // Wyczyść pole tekstowe po dodaniu zadania
-    });
-  }
-});
+// Funkcja do ładowania zadań z Firestore (dodaj tutaj logikę ładowania zadań)
 
-// Ładowanie i aktualizowanie listy zadań
 function loadTasks() {
   db.collection('tasks').onSnapshot((snapshot) => {
     const taskList = document.getElementById('taskList');
-    taskList.innerHTML = '';  // Wyczyść listę przed jej aktualizacją
-    snapshot.docs.forEach(doc => {
-      const task = doc.data();
-      const taskId = doc.id;
-
+    taskList.innerHTML = '';  // Wyczyść listę przed dodaniem nowych zadań
+    snapshot.forEach(doc => {
       const li = document.createElement('li');
-      li.textContent = `${task.name} (dodane przez: ${task.addedBy})`;
-
-      // Dodaj przycisk "Oznacz jako zrobione" dla Kuby i Agatki, jeśli zadanie nie zostało wykonane
-      if (!task.done && (currentUser === 'Kuba' || currentUser === 'Agatka')) {
-        const doneButton = document.createElement('button');
-        doneButton.textContent = 'Oznacz jako zrobione';
-        doneButton.addEventListener('click', function() {
-          markTaskAsDone(taskId);  // Funkcja do oznaczenia zadania jako wykonane
-        });
-        li.appendChild(doneButton);
-      } else if (task.done) {
-        li.textContent += ` - wykonane przez ${task.doneBy}`;
-      }
-
-      // Przyciski do usuwania zadań dla Taty i Mamy
-      if (currentUser === 'Tata' || currentUser === 'Mama') {
-        const deleteButton = document.createElement('button');
-        deleteButton.textContent = 'Usuń zadanie';
-        deleteButton.addEventListener('click', function() {
-          deleteTask(taskId);  // Funkcja do usunięcia zadania
-        });
-        li.appendChild(deleteButton);
-      }
-
+      li.textContent = doc.data().task;  // Upewnij się, że masz pole 'task' w dokumentach
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Usuń';
+      deleteBtn.onclick = () => deleteTask(doc.id);
+      li.appendChild(deleteBtn);
       taskList.appendChild(li);
     });
   });
 }
 
-// Oznaczanie zadania jako wykonane (tylko dla Kuby i Agatki)
-function markTaskAsDone(taskId) {
-  db.collection('tasks').doc(taskId).update({
-    done: true,  // Oznacz zadanie jako wykonane
-    doneBy: currentUser  // Zapisz, kto oznaczył zadanie jako wykonane
-  });
-}
+// Funkcja do dodawania zadań (dodaj tutaj logikę dodawania zadań)
 
-// Usuwanie zadania (tylko dla Taty i Mamy)
+document.getElementById('addTaskBtn').addEventListener('click', () => {
+  const newTask = document.getElementById('newTask').value;
+  if (newTask) {
+    db.collection('tasks').add({
+      task: newTask
+    }).then(() => {
+      document.getElementById('newTask').value = '';  // Wyczyść pole po dodaniu
+      alert('Zadanie dodane');
+    }).catch((error) => {
+      console.error('Błąd przy dodawaniu zadania: ', error);
+    });
+  }
+});
+
+// Funkcja do usuwania zadań
 function deleteTask(taskId) {
   db.collection('tasks').doc(taskId).delete().then(() => {
     alert('Zadanie usunięte');
