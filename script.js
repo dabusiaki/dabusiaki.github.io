@@ -82,6 +82,16 @@ function loadTasks() {
         li.textContent += ` - wykonane przez ${task.doneBy}`;
       }
 
+      // Przyciski do usuwania zadań dla Taty i Mamy
+      if (currentUser === 'Tata' || currentUser === 'Mama') {
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Usuń zadanie';
+        deleteButton.addEventListener('click', function() {
+          deleteTask(taskId);  // Funkcja do usunięcia zadania
+        });
+        li.appendChild(deleteButton);
+      }
+
       taskList.appendChild(li);
     });
   });
@@ -92,5 +102,14 @@ function markTaskAsDone(taskId) {
   db.collection('tasks').doc(taskId).update({
     done: true,  // Oznacz zadanie jako wykonane
     doneBy: currentUser  // Zapisz, kto oznaczył zadanie jako wykonane
+  });
+}
+
+// Usuwanie zadania (tylko dla Taty i Mamy)
+function deleteTask(taskId) {
+  db.collection('tasks').doc(taskId).delete().then(() => {
+    alert('Zadanie usunięte');
+  }).catch((error) => {
+    console.error('Błąd przy usuwaniu zadania: ', error);
   });
 }
