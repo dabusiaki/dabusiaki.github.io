@@ -18,8 +18,9 @@ let currentUser = null;  // Zmienna przechowująca aktualnie zalogowanego użytk
 // Obsługa logowania
 document.getElementById('loginForm').addEventListener('submit', function(e) {
   e.preventDefault();  // Zapobiega odświeżeniu strony po wysłaniu formularza
-  const username = document.getElementById('username').value;  // Pobranie nazwy użytkownika
-  const password = document.getElementById('password').value;  // Pobranie hasła
+
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
 
   // Prosty system logowania
   if ((username === 'Tata' && password === 'dabek1983') ||
@@ -45,7 +46,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
 
 // Dodawanie nowego zadania (tylko dla Taty i Mamy)
 document.getElementById('addTaskBtn').addEventListener('click', function() {
-  const taskName = document.getElementById('newTask').value;  // Pobranie nazwy nowego zadania
+  const taskName = document.getElementById('newTask').value;
   if (taskName) {
     db.collection('tasks').add({
       name: taskName,
