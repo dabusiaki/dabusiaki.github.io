@@ -15,6 +15,21 @@ const db = firebase.firestore();
 
 let currentUser = null;  // Zmienna przechowująca aktualnie zalogowanego użytkownika
 
+// Sprawdzenie, czy użytkownik był wcześniej zalogowany
+window.onload = function() {
+  const storedUser = localStorage.getItem('currentUser');
+  if (storedUser) {
+    currentUser = storedUser;
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('taskManager').style.display = 'block';
+    if (currentUser === 'Tata' || currentUser === 'Mama') {
+      document.getElementById('addTaskForm').style.display = 'block';
+    }
+    loadTasks();  // Załaduj zadania z Firestore
+    document.getElementById('logoutBtn').style.display = 'inline';  // Pokaż przycisk wylogowania
+  }
+};
+
 // Obsługa logowania
 document.getElementById('loginForm').addEventListener('submit', function(e) {
   e.preventDefault();  // Zapobiega odświeżeniu strony po wysłaniu formularza
@@ -30,6 +45,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     
     alert('Zalogowano jako ' + username);
     currentUser = username;  // Przypisanie zalogowanego użytkownika
+    localStorage.setItem('currentUser', username);  // Zapisz użytkownika w localStorage
     document.getElementById('login').style.display = 'none';  // Ukrycie sekcji logowania
     document.getElementById('taskManager').style.display = 'block';  // Wyświetlenie sekcji zarządzania zadaniami
     
@@ -39,9 +55,20 @@ document.getElementById('loginForm').addEventListener('submit', function(e) {
     }
 
     loadTasks();  // Załaduj zadania z Firestore
+    document.getElementById('logoutBtn').style.display = 'inline';  // Pokaż przycisk wylogowania
   } else {
     alert('Błędne dane logowania');
   }
+});
+
+// Wylogowywanie
+document.getElementById('logoutBtn').addEventListener('click', function() {
+  currentUser = null;
+  localStorage.removeItem('currentUser');  // Usuń użytkownika z localStorage
+  document.getElementById('login').style.display = 'block';  // Pokaż sekcję logowania
+  document.getElementById('taskManager').style.display = 'none';  // Ukryj sekcję zarządzania zadaniami
+  document.getElementById('addTaskForm').style.display = 'none';  // Ukryj formularz dodawania zadań
+  document.getElementById('logoutBtn').style.display = 'none';  // Ukryj przycisk wylogowania
 });
 
 // Dodawanie nowego zadania (tylko dla Taty i Mamy)
