@@ -43,6 +43,7 @@ function loginUser() {
     localStorage.setItem('username', username);
     document.getElementById('username').textContent = username;
     document.getElementById('login-section').style.display = 'none';  // Ukrycie przycisku logowania
+    requestNotificationPermission(); // Żądanie pozwolenia na powiadomienia
   } else {
     alert('Błędny login lub hasło');
     document.getElementById('login-section').style.display = 'block'; // Pokaż przycisk „Zaloguj ponownie”
@@ -71,6 +72,7 @@ document.getElementById('add-item').addEventListener('click', () => {
     }).then(() => {
       document.getElementById('new-item').value = '';
       console.log('Dodano przedmiot do listy');
+      showNotification(newItem, username); // Wyślij powiadomienie w przeglądarce
     }).catch((error) => {
       console.error('Błąd przy dodawaniu przedmiotu:', error);
     });
@@ -93,15 +95,41 @@ db.collection('shoppingList').orderBy('timestamp', 'desc').onSnapshot(snapshot =
 });
 
 // Prośba o pozwolenie na powiadomienia
-messaging.requestPermission()
-  .then(() => messaging.getToken())
-  .then((token) => {
-    console.log('Token:', token);
-    // Można zapisać token w bazie danych lub wykorzystać go do wysyłania powiadomień
-  })
-  .catch((err) => {
-    console.error('Brak zgody na powiadomienia', err);
-  });
+function requestNotificationPermission() {
+  messaging.requestPermission()
+    .then(() => messaging.getToken())
+    .then((token) => {
+      console.log('Token:', token);
+      const username = localStorage.getItem('username');
+      // Zapisz token w bazie danych
+      db.collection('users').doc(username).set({
+        token: token
+      }, { merge: true });
+    })
+    .catch((err) => {
+      console.error('Brak zgody na powiadomienia', err);
+    });
+}
+
+// Funkcja do pokazywania powiadomienia w przeglądarce
+function showNotification(item, addedBy) {
+  const notificationTitle = 'Nowy przedmiot dodany';
+  const notificationOptions = {
+    body: `${addedBy} dodał przedmiot: ${item}`,
+    icon: 'https://yourapp.com/icon.png' // Podaj tutaj link do ikony
+  };
+  
+  // Sprawdź, czy przeglądarka obsługuje powiadomienia
+  if (Notification.permission === 'granted') {
+    new Notification(notificationTitle, notificationOptions);
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then(permission => {
+      if (permission === 'granted') {
+        new Notification(notificationTitle, notificationOptions);
+      }
+    });
+  }
+}
 
 // Wywołanie sprawdzania logowania
 checkLogin();
