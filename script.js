@@ -23,21 +23,34 @@ const users = {
 };
 
 // Sprawdzanie zalogowanego użytkownika w localStorage
-const savedUser = localStorage.getItem('username');
-if (savedUser) {
-  document.getElementById('username').textContent = savedUser;
-} else {
+function checkLogin() {
+  const savedUser = localStorage.getItem('username');
+  if (savedUser) {
+    document.getElementById('username').textContent = savedUser;
+    document.getElementById('login-section').style.display = 'none';  // Ukrycie sekcji logowania
+  } else {
+    loginUser();
+  }
+}
+
+// Funkcja logowania
+function loginUser() {
   const username = prompt('Podaj nazwę użytkownika');
   const password = prompt('Podaj hasło');
-  
+
   // Sprawdzanie loginu i hasła
   if (users[username] && users[username] === password) {
     localStorage.setItem('username', username);
     document.getElementById('username').textContent = username;
+    document.getElementById('login-section').style.display = 'none';  // Ukrycie przycisku logowania
   } else {
     alert('Błędny login lub hasło');
+    document.getElementById('login-section').style.display = 'block'; // Pokaż przycisk „Zaloguj ponownie”
   }
 }
+
+// Ponowne logowanie po błędzie
+document.getElementById('retry-login').addEventListener('click', loginUser);
 
 // Wylogowanie
 document.getElementById('logout').addEventListener('click', () => {
@@ -89,3 +102,6 @@ messaging.requestPermission()
   .catch((err) => {
     console.error('Brak zgody na powiadomienia', err);
   });
+
+// Wywołanie sprawdzania logowania
+checkLogin();
