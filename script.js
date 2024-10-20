@@ -11,58 +11,84 @@ const firebaseConfig = {
 
 // Inicjalizacja Firebase
 firebase.initializeApp(firebaseConfig);
-
-// Inicjalizacja Firestore
 const db = firebase.firestore();
-
-// Inicjalizacja Messaging
+const auth = firebase.auth();
 const messaging = firebase.messaging();
 
-// Poproś o pozwolenie na powiadomienia
-messaging.requestPermission()
-  .then(() => messaging.getToken())
-  .then((token) => {
-    console.log('Token: ', token);
-    // Możesz zapisać token użytkownika w bazie danych
-  })
-  .catch((err) => {
-    console.error('Nie udało się uzyskać tokenu', err);
-  });
+// Autoryzacja
+const users = {
+  Tata: "dabek1983",
+  Mama: "chuda1403",
+  Kuba: "Kubus2008",
+  Agatka: "Aga123"
+};
 
-// Odbieranie wiadomości
-messaging.onMessage((payload) => {
-  console.log('Powiadomienie przychodzące: ', payload);
-  alert(`Nowe powiadomienie: ${payload.notification.title} - ${payload.notification.body}`);
-});
-
-// Dodaj przedmiot do listy zakupów
-document.getElementById('add-item').addEventListener('click', () => {
-  const newItem = document.getElementById('new-item').value;
-  if (newItem) {
-    db.collection('shoppingList').add({
-      item: newItem,
-      addedBy: 'Użytkownik', // Tutaj dodaj nazwę zalogowanego użytkownika
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-      console.log('Dodano przedmiot do listy');
-      document.getElementById('new-item').value = ''; // Wyczyść pole tekstowe
-    }).catch((error) => {
-      console.error('Błąd przy dodawaniu przedmiotu:', error);
-    });
+// Sprawdź, czy użytkownik jest zalogowany
+auth.onAuthStateChanged(user => {
+  if (user) {
+    document.getElementById('username').textContent = user.displayName;
+  } else {
+    const username = prompt('Podaj nazwę użytkownika');
+    const password = prompt('Podaj hasło');
+    
+    if (users[username] && users[username] === password) {
+      // Logowanie
+      auth.signInAnonymously().then(() => {
+        auth.currentUser.updateProfile({
+          displayName: username
+        }).then(() => {
+          document.getElementById('username').textContent = username;
+        });
+      });
+    } else {
+      alert('Błędny login lub hasło');
+    }
   }
 });
 
 // Wylogowanie
 document.getElementById('logout').addEventListener('click', () => {
-  // Wprowadź funkcję wylogowania
-  console.log('Wylogowano');
+  auth.signOut().then(() => {
+    alert('Wylogowano');
+    location.reload();
+  });
 });
 
-// Pobieranie przedmiotów z Firestore i wyświetlanie na stronie
-db.collection('shoppingList').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
+// Prośba o pozwolenie na powiadomienia
+messaging.requestPermission()
+  .then(() => messaging.getToken())
+  .then((token) => {
+    console.log('Token: ', token);
+    // Można zapisać token w bazie danych
+  })
+  .catch((err) => {
+    console.error('Brak zgody na powiadomienia', err);
+  });
+
+// Dodawanie do listy zakupów
+document.getElementById('add-item').addEventListener('click', () => {
+  const newItem = document.getElementById('new-item').value;
+  if (newItem) {
+    db.collection('shoppingList').add({
+      item: newItem,
+      addedBy: auth.currentUser.displayName,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      console.log('Dodano przedmiot do listy');
+      document.getElementById('new-item').value = '';
+    }).catch((error) => {
+      console.error('Błąd przy dodawaniu przedmiotu:', error);
+    });
+  } else {
+    alert('Wprowadź nazwę przedmiotu');
+  }
+});
+
+// Pobieranie i wyświetlanie listy
+db.collection('shoppingList').orderBy('timestamp', 'desc').onSnapshot(snapshot => {
   const shoppingList = document.getElementById('shopping-list');
-  shoppingList.innerHTML = ''; // Wyczyść listę przed aktualizacją
-  snapshot.forEach((doc) => {
+  shoppingList.innerHTML = '';
+  snapshot.forEach(doc => {
     const item = doc.data().item;
     const addedBy = doc.data().addedBy;
     const li = document.createElement('li');
