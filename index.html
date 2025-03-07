@@ -1,26 +1,73 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lista Zakupów</title>
-  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-messaging.js"></script>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monopoly Bank</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .player { margin: 10px; padding: 10px; border: 1px solid #000; display: inline-block; }
+        .balance { font-size: 20px; font-weight: bold; }
+    </style>
 </head>
 <body>
-  <div>
-    <h1>Lista Zakupów</h1>
-    <p>Zalogowano jako: <span id="username"></span></p>
-    <ul id="shopping-list"></ul>
-    <input type="text" id="new-item" placeholder="Dodaj przedmiot">
-    <button id="add-item">Dodaj do listy</button>
-    <button id="logout">Wyloguj</button>
-    <div id="login-section">
-      <button id="retry-login" style="display: none;">Zaloguj ponownie</button>
-    </div>
-  </div>
-  <script src="script.js"></script>
+    <h1>Monopoly Bank</h1>
+    <input type="text" id="playerName" placeholder="Nazwa gracza">
+    <button onclick="addPlayer()">Dodaj gracza</button>
+    <div id="players"></div>
+    
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyA04bN5...", // Wstaw swoje dane
+            authDomain: "rodzinkataski.firebaseapp.com",
+            projectId: "rodzinkataski",
+            storageBucket: "rodzinkataski.appspot.com",
+            messagingSenderId: "921333004895",
+            appId: "1:921333004895:web:b22bdf6d54a32a4838b9ea"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const playersRef = db.collection("players");
+        
+        function addPlayer() {
+            const name = document.getElementById("playerName").value.trim();
+            if (name) {
+                playersRef.doc(name).set({ balance: 1500 });
+            }
+        }
+        
+        function updateBalance(name, amount) {
+            const playerDoc = playersRef.doc(name);
+            playerDoc.get().then(doc => {
+                if (doc.exists) {
+                    playerDoc.update({ balance: doc.data().balance + amount });
+                }
+            });
+        }
+        
+        function renderPlayers() {
+            const playersDiv = document.getElementById("players");
+            playersDiv.innerHTML = "";
+            playersRef.onSnapshot(snapshot => {
+                playersDiv.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    playersDiv.innerHTML += `
+                        <div class="player">
+                            <h2>${doc.id}</h2>
+                            <p class="balance">$${data.balance}</p>
+                            <button onclick="updateBalance('${doc.id}', 100)">+100</button>
+                            <button onclick="updateBalance('${doc.id}', -100)">-100</button>
+                        </div>
+                    `;
+                });
+            });
+        }
+        
+        renderPlayers();
+    </script>
 </body>
 </html>
