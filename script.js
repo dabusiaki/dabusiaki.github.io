@@ -22,11 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('takeLoanButton').addEventListener('click', takeLoan);
     document.getElementById('repayButton').addEventListener('click', repayLoan);
     document.getElementById('payBankButton').addEventListener('click', payToBank);
-    document.getElementById('startBonusButton').addEventListener('click', addStartBonus);
     document.getElementById('deletePlayerButton').addEventListener('click', deletePlayer);
     document.getElementById('resetButton').addEventListener('click', resetGame);
-    document.getElementById('bankAddButton').addEventListener('click', bankAddMoney);
-    document.getElementById('bankRemoveButton').addEventListener('click', bankRemoveMoney);
+    document.querySelectorAll('.quick-action-btn').forEach(btn => {
+        btn.addEventListener('click', quickBankAction);
+    });
     document.getElementById('kubaBonusButton').addEventListener('click', kubaSecretBonus);
 });
 
@@ -45,7 +45,7 @@ async function joinGame() {
 
     const bankRef = db.collection("players").doc("Bank");
     if (!(await bankRef.get()).exists) {
-        await bankRef.set({ balance: BANK_BALANCE, loans: {} });
+        await bankRef.set({ balance: BANK_BALANCE });
     }
 
     if (playerName !== "Bank") {
@@ -247,76 +247,41 @@ async function payToBank() {
     }
 }
 
-async function bankAddMoney() {
-    const amount = Number(document.getElementById("bankAddAmount").value);
+async function quickBankAction(event) {
+    if (currentPlayer !== "Bank") return;
+    
+    const amount = Number(event.target.dataset.amount);
     const player = document.getElementById("bankPlayersList").value;
-    if (!amount || amount <= 0) return alert("Nieprawidłowa kwota!");
+    
+    if (!player || player === "Bank") {
+        alert("Wybierz gracza!");
+        return;
+    }
 
     try {
         await db.runTransaction(async t => {
             const playerRef = db.collection("players").doc(player);
+            const bankRef = db.collection("players").doc("Bank");
+            
+            const playerDoc = await t.get(playerRef);
+            const newBalance = playerDoc.data().balance + amount;
+            
+            if (newBalance < 0) throw new Error("Gracz nie może mieć ujemnego salda!");
+
             t.update(playerRef, { balance: firebase.firestore.FieldValue.increment(amount) });
+            t.update(bankRef, { balance: firebase.firestore.FieldValue.increment(-amount) });
 
             await db.collection("transactions").add({
-                type: "BANK_ADD",
+                type: amount > 0 ? "BANK_QUICK_ADD" : "BANK_QUICK_REMOVE",
                 from: "Bank",
                 to: player,
-                amount: amount,
+                amount: Math.abs(amount),
                 timestamp: new Date()
             });
         });
-        alert("Środki dodane!");
+        alert(`Akcja wykonana: ${formatMoney(amount)} $`);
     } catch (error) {
         alert(error.message);
-    }
-}
-
-async function bankRemoveMoney() {
-    const amount = Number(document.getElementById("bankAddAmount").value);
-    const player = document.getElementById("bankPlayersList").value;
-    if (!amount || amount <= 0) return alert("Nieprawidłowa kwota!");
-
-    try {
-        await db.runTransaction(async t => {
-            const playerRef = db.collection("players").doc(player);
-            const playerDoc = await t.get(playerRef);
-            if (playerDoc.data().balance < amount) throw new Error("Gracz nie ma tylu środków!");
-
-            t.update(playerRef, { balance: firebase.firestore.FieldValue.increment(-amount) });
-
-            await db.collection("transactions").add({
-                type: "BANK_REMOVE",
-                from: player,
-                to: "Bank",
-                amount: amount,
-                timestamp: new Date()
-            });
-        });
-        alert("Środki odebrane!");
-    } catch (error) {
-        alert(error.message);
-    }
-}
-
-async function addStartBonus() {
-    const player = document.getElementById("bankPlayersList").value;
-    if (player === "Bank") return;
-
-    try {
-        await db.collection("players").doc(player).update({
-            balance: firebase.firestore.FieldValue.increment(2000000)
-        });
-        
-        await db.collection("transactions").add({
-            type: "BONUS",
-            from: "Bank",
-            to: player,
-            amount: 2000000,
-            timestamp: new Date()
-        });
-        alert("Bonus dodany!");
-    } catch (error) {
-        alert("Błąd: " + error.message);
     }
 }
 
@@ -407,10 +372,9 @@ function getTransactionType(type) {
         LOAN: "🏦 POŻYCZKA",
         LOAN_REPAYMENT: "💳 SPŁATA",
         TRANSFER: "💸 PRZELEW",
-        BONUS: "🎁 BONUS",
         BANK_PAYMENT: "🏛️ PŁATNOŚĆ",
-        BANK_ADD: "🏦 DODANO",
-        BANK_REMOVE: "🏦 ODEBRANO",
+        BANK_QUICK_ADD: "⚡ SZYBKI DODATEK",
+        BANK_QUICK_REMOVE: "⚡ SZYBKIE ODEBRANIE",
         SECRET_BONUS: "🕵️ TAJNA NAGRODA"
     };
     return types[type] || type;
