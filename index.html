@@ -1,44 +1,39 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monopoly Cash Bank</title>
-  <link rel="stylesheet" href="styles.css">
-  <!-- Ładujemy Firebase wersji 8.10.0 -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"></script>
-  <script src="script.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monopoly Bank</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="container">
-    <h1>Monopoly Cash Bank</h1>
-    
-    <!-- Sekcja dołączenia do gry – każdy wpisuje tylko swoją nazwę -->
-    <div id="loginSection">
-      <input type="text" id="playerName" placeholder="Wpisz swoją nazwę">
-      <button onclick="joinGame()">Dołącz</button>
+    <h1>Monopoly Bank</h1>
+
+    <div id="login">
+        <input type="text" id="playerName" placeholder="Wpisz swoją nazwę">
+        <button onclick="joinGame()">Dołącz</button>
     </div>
-    
-    <!-- Panel Banku – widoczny tylko, gdy gracz wpisze 'Bank' -->
-    <div id="bankSection" style="display: none;">
-      <h2>Panel Banku</h2>
-      <button onclick="resetGame()">Zresetuj grę</button>
+
+    <div id="game" style="display: none;">
+        <h2>Witaj, <span id="currentPlayerName"></span>!</h2>
+        <p>Twój stan konta: <span id="balance">0</span> $</p>
+
+        <h3>Przelej pieniądze</h3>
+        <select id="playersList"></select>
+        <input type="number" id="amount" placeholder="Kwota">
+        <button onclick="sendMoney()">Przelej</button>
+
+        <h3>Lista graczy</h3>
+        <ul id="players"></ul>
+
+        <div id="bankControls" style="display: none;">
+            <h3>Panel Banku</h3>
+            <button onclick="resetGame()">Zresetuj grę</button>
+        </div>
     </div>
-    
-    <!-- Sekcja gry – lista graczy i możliwość przelewów -->
-    <div id="gameSection" style="display: none;">
-      <h2>Gracze</h2>
-      <ul id="playersList"></ul>
-      
-      <h2>Przelej pieniądze</h2>
-      <select id="recipient"></select>
-      <input type="number" id="amount" placeholder="Kwota">
-      <button onclick="transferMoney()">Przelej</button>
-    </div>
-    
-    <button id="logoutBtn" onclick="logout()" style="display: none;">Wyloguj</button>
-  </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <script src="script.js" defer></script>
 </body>
 </html>
