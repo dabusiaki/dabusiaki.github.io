@@ -1,4 +1,3 @@
-// KONFIGURACJA FIREBASE
 const firebaseConfig = {
     apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
     authDomain: "rodzinkataski.firebaseapp.com",
@@ -9,12 +8,17 @@ const firebaseConfig = {
     measurementId: "G-JM7KL8KDEC"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let currentPlayer = null;
 
-// DOŁĄCZANIE DO GRY
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('joinButton').addEventListener('click', joinGame);
+    document.getElementById('sendButton').addEventListener('click', sendMoney);
+});
+
 function joinGame() {
     const playerName = document.getElementById("playerName").value.trim();
     if (!playerName) {
@@ -27,7 +31,6 @@ function joinGame() {
     document.getElementById("login").style.display = "none";
     document.getElementById("game").style.display = "block";
 
-    // Dodaj gracza do Firestore, jeśli go nie ma
     db.collection("players").doc(playerName).get().then((doc) => {
         if (!doc.exists) {
             db.collection("players").doc(playerName).set({ balance: 1500 });
@@ -37,7 +40,6 @@ function joinGame() {
     loadPlayers();
 }
 
-// WCZYTANIE LISTY GRACZY
 function loadPlayers() {
     db.collection("players").onSnapshot((snapshot) => {
         const playersList = document.getElementById("players");
@@ -70,7 +72,6 @@ function loadPlayers() {
     });
 }
 
-// PRZELEW PIENIĘDZY
 function sendMoney() {
     const amount = parseInt(document.getElementById("amount").value);
     const receiver = document.getElementById("playersList").value;
@@ -95,7 +96,6 @@ function sendMoney() {
     });
 }
 
-// RESETOWANIE GRY (dla Banku)
 function resetGame() {
     if (currentPlayer !== "Bank") {
         alert("Tylko Bank może resetować grę!");
