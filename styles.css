@@ -12,7 +12,7 @@ body {
   background: white;
   padding: 20px;
   border-radius: 10px;
-  box-shadow: 0px 0px 10px gray;
+  box-shadow: 0 0 10px gray;
 }
 
 input[type="text"],
