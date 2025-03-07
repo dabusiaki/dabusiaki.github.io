@@ -1,13 +1,18 @@
 body {
     font-family: Arial, sans-serif;
     text-align: center;
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto;
     padding: 20px;
+    background-color: #f0f8ff;
 }
 
 #game {
     margin-top: 20px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 ul {
@@ -16,33 +21,59 @@ ul {
 }
 
 li {
-    margin: 5px 0;
-    padding: 8px;
-    background-color: #f5f5f5;
-    border-radius: 4px;
+    margin: 10px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 select, input {
-    padding: 8px;
+    padding: 10px;
     margin: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 200px;
 }
 
 button {
-    padding: 8px 15px;
+    padding: 10px 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+#sendButton, #takeLoanButton {
     background-color: #4CAF50;
     color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+}
+
+#startBonusButton {
+    background-color: #2196F3;
+    color: white;
+}
+
+#deletePlayerButton {
+    background-color: #f44336;
+    color: white;
 }
 
 button:hover {
-    background-color: #45a049;
+    opacity: 0.8;
 }
 
 #bankControls {
     margin-top: 30px;
     padding: 20px;
-    background-color: #e9f7ef;
+    background-color: #fff3cd;
     border-radius: 8px;
+}
+
+.loan-info {
+    color: #666;
+    font-size: 0.9em;
 }
