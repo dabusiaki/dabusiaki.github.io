@@ -17,12 +17,17 @@
     <div id="game" style="display: none;">
         <h2>Witaj, <span id="currentPlayerName"></span>!</h2>
         <p>Twój stan konta: <span id="balance">0</span> $</p>
+        <p>Dostępna pożyczka: <span id="availableLoan">0</span> $</p>
 
         <div id="playerControls">
             <h3>Przelej pieniądze</h3>
             <select id="playersList"></select>
             <input type="number" id="amount" placeholder="Kwota">
             <button id="sendButton">Przelej</button>
+
+            <h3>Pożyczka od Banku</h3>
+            <input type="number" id="loanAmount" placeholder="Maksymalnie 5 000 000 $">
+            <button id="takeLoanButton">Weź pożyczkę</button>
         </div>
 
         <h3>Lista graczy</h3>
@@ -32,6 +37,7 @@
             <h3>Panel Banku</h3>
             <select id="bankPlayersList"></select>
             <button id="startBonusButton">Dodaj startowe 2 000 000 $</button>
+            <button id="deletePlayerButton">Usuń gracza</button>
             <button onclick="resetGame()">Zresetuj grę</button>
             <h4>Ostatnie transakcje:</h4>
             <ul id="transactions"></ul>
