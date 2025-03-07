@@ -51,19 +51,49 @@ button {
 #sendButton { background: #27ae60; color: white; }
 #takeLoanButton { background: #2980b9; color: white; }
 #repayButton { background: #f1c40f; color: black; }
-#startBonusButton { background: #2ecc71; color: white; }
+#payBankButton { background: #8e44ad; color: white; }
 #deletePlayerButton { background: #e74c3c; color: white; }
+#resetButton { background: #95a5a6; color: white; }
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.quick-action-btn {
+    padding: 12px;
+    font-size: 14px;
+    border-radius: 8px;
+    background-color: #3498db;
+    color: white;
+}
+
+.quick-action-btn[data-amount^="-"] {
+    background-color: #e74c3c;
+}
 
 .loan { color: #c0392b; font-weight: bold; }
 .amount { color: #27ae60; font-weight: bold; }
-.type { 
+
+.type {
     display: inline-block;
     padding: 3px 8px;
     border-radius: 4px;
     margin-right: 10px;
     font-size: 0.9em;
+    color: white;
 }
-/* Styl dla tajnego przycisku */
+
+.type.LOAN { background: #2980b9; }
+.type.LOAN_REPAYMENT { background: #f1c40f; }
+.type.TRANSFER { background: #27ae60; }
+.type.BANK_PAYMENT { background: #8e44ad; }
+.type.BANK_QUICK_ADD { background: #2ecc71; }
+.type.BANK_QUICK_REMOVE { background: #e74c3c; }
+.type.SECRET_BONUS { background: #d35400; }
+
 #kubaSecret {
     margin-top: 20px;
     padding: 15px;
@@ -72,11 +102,7 @@ button {
 }
 
 #kubaBonusButton {
-    background: #e67e22 !important;
+    background: #e67e22;
     font-weight: bold;
     text-transform: uppercase;
 }
-
-/* Kolory dla nowych typów transakcji */
-[class*="BANK_"] { background: #3498db; color: white; }
-[class*="SECRET_"] { background: #e74c3c; color: white; }
