@@ -1,107 +1,39 @@
 body {
-  font-family: 'Arial', sans-serif;
-  background-color: #e9ecef;
-  margin: 0;
-  padding: 20px;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f4f4f4;
 }
 
-h1 {
-  text-align: center;
-  color: #495057;
-  margin-bottom: 30px;
-}
-
-#authButtons {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
-  gap: 10px;
-}
-
-#login {
-  background-color: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-input[type="text"],
-input[type="password"] {
-  padding: 10px;
-  margin: 5px 0;
-  width: 200px;
-  border: 1px solid #ced4da;
-  border-radius: 5px;
-  transition: border-color 0.3s;
-}
-
-input[type="text"]:focus,
-input[type="password"]:focus {
-  border-color: #80bdff;
-  outline: none;
+.container {
+    max-width: 500px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px gray;
 }
 
 button {
-  padding: 10px 15px;
-  border: none;
-  border-radius: 5px;
-  background-color: #28a745;
-  color: white;
-  cursor: pointer;
-  margin-left: 5px;
-  transition: background-color 0.3s;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    padding: 10px;
+    margin: 5px;
+    cursor: pointer;
 }
 
 button:hover {
-  background-color: #218838;
-}
-
-#taskManager {
-  margin-top: 20px;
+    background-color: #45a049;
 }
 
 ul {
-  list-style-type: none;
-  padding: 0;
+    list-style-type: none;
+    padding: 0;
 }
 
 li {
-  background-color: white;
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
-}
-
-li:hover {
-  transform: translateY(-2px);
-}
-
-li button {
-  background-color: #dc3545;
-}
-
-li button:hover {
-  background-color: #c82333;
-}
-
-#logoutBtn {
-  background-color: #007bff;
-}
-
-#logoutBtn:hover {
-  background-color: #0056b3;
-}
-
-#addTaskForm {
-  margin-top: 20px;
-  padding: 20px;
-  background-color: white;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background: #ddd;
+    margin: 5px;
+    padding: 10px;
+    border-radius: 5px;
 }
