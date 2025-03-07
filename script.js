@@ -8,18 +8,21 @@ const firebaseConfig = {
     measurementId: "G-JM7KL8KDEC"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let currentPlayer = null;
+const INITIAL_BALANCE = 15000000;
+const BANK_BALANCE = 1000000000;
+const START_BONUS = 2000000;
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('joinButton').addEventListener('click', joinGame);
     document.getElementById('sendButton').addEventListener('click', sendMoney);
+    document.getElementById('startBonusButton').addEventListener('click', addStartBonus);
 });
 
-function joinGame() {
+async function joinGame() {
     const playerName = document.getElementById("playerName").value.trim();
     if (!playerName) {
         alert("Podaj swoją nazwę!");
@@ -31,35 +34,57 @@ function joinGame() {
     document.getElementById("login").style.display = "none";
     document.getElementById("game").style.display = "block";
 
-    db.collection("players").doc(playerName).get().then((doc) => {
-        if (!doc.exists) {
-            db.collection("players").doc(playerName).set({ balance: 1500 });
-        }
-    });
+    // Inicjalizacja Banku
+    const bankRef = db.collection("players").doc("Bank");
+    const bankDoc = await bankRef.get();
+    if (!bankDoc.exists) {
+        await bankRef.set({ balance: BANK_BALANCE });
+    }
+
+    // Inicjalizacja gracza
+    const playerRef = db.collection("players").doc(playerName);
+    const playerDoc = await playerRef.get();
+    if (!playerDoc.exists && playerName !== "Bank") {
+        await playerRef.set({ balance: INITIAL_BALANCE });
+    }
 
     loadPlayers();
+    loadTransactions();
 }
 
 function loadPlayers() {
     db.collection("players").onSnapshot((snapshot) => {
         const playersList = document.getElementById("players");
         const playersDropdown = document.getElementById("playersList");
+        const bankPlayersDropdown = document.getElementById("bankPlayersList");
+        
         playersList.innerHTML = "";
         playersDropdown.innerHTML = "";
+        bankPlayersDropdown.innerHTML = "";
 
         snapshot.forEach((doc) => {
             const player = doc.id;
             const balance = doc.data().balance;
-            const li = document.createElement("li");
-            li.textContent = `${player}: ${balance} $`;
-            playersList.appendChild(li);
+            
+            // Dla zwykłych graczy
+            if (player !== "Bank") {
+                const li = document.createElement("li");
+                li.textContent = `${player}: ${balance} $`;
+                playersList.appendChild(li);
 
-            if (player !== currentPlayer) {
-                const option = document.createElement("option");
-                option.value = player;
-                option.textContent = player;
-                playersDropdown.appendChild(option);
+                if (player !== currentPlayer) {
+                    const option = document.createElement("option");
+                    option.value = player;
+                    option.textContent = player;
+                    playersDropdown.appendChild(option);
+                }
             }
+
+            // Dla panelu banku
+            const bankOption = document.createElement("option");
+            bankOption.value = player;
+            bankOption.textContent = player;
+            bankPlayersDropdown.appendChild(bankOption);
 
             if (player === currentPlayer) {
                 document.getElementById("balance").textContent = balance;
@@ -68,11 +93,12 @@ function loadPlayers() {
 
         if (currentPlayer === "Bank") {
             document.getElementById("bankControls").style.display = "block";
+            document.getElementById("playerControls").style.display = "none";
         }
     });
 }
 
-function sendMoney() {
+async function sendMoney() {
     const amount = parseInt(document.getElementById("amount").value);
     const receiver = document.getElementById("playersList").value;
 
@@ -81,30 +107,85 @@ function sendMoney() {
         return;
     }
 
-    db.collection("players").doc(currentPlayer).get().then((doc) => {
-        if (doc.exists && doc.data().balance >= amount) {
-            db.collection("players").doc(currentPlayer).update({
-                balance: firebase.firestore.FieldValue.increment(-amount)
-            });
+    const transaction = {
+        from: currentPlayer,
+        to: receiver,
+        amount: amount,
+        timestamp: new Date()
+    };
 
-            db.collection("players").doc(receiver).update({
-                balance: firebase.firestore.FieldValue.increment(amount)
-            });
-        } else {
-            alert("Nie masz wystarczających środków!");
-        }
-    });
+    try {
+        await db.runTransaction(async (transaction) => {
+            const fromRef = db.collection("players").doc(currentPlayer);
+            const fromDoc = await transaction.get(fromRef);
+            
+            if (fromDoc.data().balance >= amount) {
+                transaction.update(fromRef, { balance: firebase.firestore.FieldValue.increment(-amount) });
+                transaction.update(db.collection("players").doc(receiver), { balance: firebase.firestore.FieldValue.increment(amount) });
+                await db.collection("transactions").add(transaction);
+            } else {
+                alert("Nie masz wystarczających środków!");
+            }
+        });
+    } catch (error) {
+        console.error("Błąd transakcji:", error);
+    }
 }
 
-function resetGame() {
-    if (currentPlayer !== "Bank") {
-        alert("Tylko Bank może resetować grę!");
-        return;
-    }
+async function addStartBonus() {
+    if (currentPlayer !== "Bank") return;
+    
+    const selectedPlayer = document.getElementById("bankPlayersList").value;
+    const transaction = {
+        from: "Bank",
+        to: selectedPlayer,
+        amount: START_BONUS,
+        timestamp: new Date()
+    };
 
-    db.collection("players").get().then((snapshot) => {
-        snapshot.forEach((doc) => {
-            db.collection("players").doc(doc.id).update({ balance: 1500 });
+    try {
+        await db.collection("players").doc(selectedPlayer).update({
+            balance: firebase.firestore.FieldValue.increment(START_BONUS)
         });
+        await db.collection("transactions").add(transaction);
+        loadTransactions();
+    } catch (error) {
+        console.error("Błąd dodawania bonusu:", error);
+    }
+}
+
+function loadTransactions() {
+    db.collection("transactions")
+        .orderBy("timestamp", "desc")
+        .limit(10)
+        .onSnapshot((snapshot) => {
+            const transactionsList = document.getElementById("transactions");
+            transactionsList.innerHTML = "";
+            
+            snapshot.forEach(doc => {
+                const transaction = doc.data();
+                const li = document.createElement("li");
+                li.textContent = `${transaction.timestamp.toDate().toLocaleString()}: ${transaction.from} → ${transaction.to} (${transaction.amount} $)`;
+                transactionsList.appendChild(li);
+            });
+        });
+}
+
+async function resetGame() {
+    if (currentPlayer !== "Bank") return;
+
+    const players = await db.collection("players").get();
+    players.forEach(async (doc) => {
+        if (doc.id === "Bank") {
+            await doc.ref.update({ balance: BANK_BALANCE });
+        } else {
+            await doc.ref.update({ balance: INITIAL_BALANCE });
+        }
+    });
+    
+    // Usuń wszystkie transakcje
+    const transactions = await db.collection("transactions").get();
+    transactions.forEach(async (doc) => {
+        await doc.ref.delete();
     });
 }
