@@ -48,13 +48,17 @@
             <h3>Panel Banku</h3>
             <select id="bankPlayersList"></select>
             
-            <h4>Zarządzanie gotówką</h4>
-            <input type="number" id="bankAddAmount" placeholder="Kwota">
-            <button id="bankAddButton">Dodaj graczowi</button>
-            <button id="bankRemoveButton">Odbierz graczowi</button>
-            
+            <h4>Szybkie akcje</h4>
+            <div class="quick-actions">
+                <button class="quick-action-btn" data-amount="500000">+500 000 $</button>
+                <button class="quick-action-btn" data-amount="-500000">-500 000 $</button>
+                <button class="quick-action-btn" data-amount="1000000">+1 000 000 $</button>
+                <button class="quick-action-btn" data-amount="-1000000">-1 000 000 $</button>
+                <button class="quick-action-btn" data-amount="2000000">+2 000 000 $</button>
+                <button class="quick-action-btn" data-amount="-2000000">-2 000 000 $</button>
+            </div>
+
             <h4>Akcje administracyjne</h4>
-            <button id="startBonusButton">Dodaj startowe 2 000 000 $</button>
             <button id="deletePlayerButton">Usuń gracza</button>
             <button id="resetButton">Zresetuj grę</button>
             
