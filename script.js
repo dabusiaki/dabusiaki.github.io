@@ -1,141 +1,110 @@
-// Konfiguracja Firebase – wersja 8.10.0
+// KONFIGURACJA FIREBASE
 const firebaseConfig = {
-  apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
-  authDomain: "rodzinkataski.firebaseapp.com",
-  projectId: "rodzinkataski",
-  storageBucket: "rodzinkataski.appspot.com",
-  messagingSenderId: "921333004895",
-  appId: "1:921333004895:web:b22bdf6d54a32a4838b9ea",
-  measurementId: "G-JM7KL8KDEC"
+    apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
+    authDomain: "rodzinkataski.firebaseapp.com",
+    projectId: "rodzinkataski",
+    storageBucket: "rodzinkataski.appspot.com",
+    messagingSenderId: "921333004895",
+    appId: "1:921333004895:web:b22bdf6d54a32a4838b9ea",
+    measurementId: "G-JM7KL8KDEC"
 };
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-// Kolekcja graczy
-const playersRef = db.collection("players");
 
-// Aktualny gracz – przechowywany w localStorage
-let currentPlayer = localStorage.getItem("monopolyUser") || "";
+let currentPlayer = null;
 
-// Funkcja dołączenia do gry – każdy wpisuje tylko swoją nazwę
+// DOŁĄCZANIE DO GRY
 function joinGame() {
-  const name = document.getElementById("playerName").value.trim();
-  if (!name) {
-    alert("Wpisz swoją nazwę!");
-    return;
-  }
-  currentPlayer = name;
-  localStorage.setItem("monopolyUser", name);
-  // Ustaw domyślne saldo 1500 lub zachowaj istniejące saldo
-  playersRef.doc(name).set({ balance: 1500 }, { merge: true })
-    .then(() => loginUser(name));
-}
+    const playerName = document.getElementById("playerName").value.trim();
+    if (!playerName) {
+        alert("Podaj swoją nazwę!");
+        return;
+    }
 
-// Funkcja logująca – ukrywa sekcję logowania, pokazuje sekcję gry
-function loginUser(name) {
-  document.getElementById("loginSection").style.display = "none";
-  document.getElementById("gameSection").style.display = "block";
-  document.getElementById("logoutBtn").style.display = "block";
-  if (name === "Bank") {
-    document.getElementById("bankSection").style.display = "block";
-  }
-  updatePlayerList();
-  requestNotificationPermission();
-}
+    currentPlayer = playerName;
+    document.getElementById("currentPlayerName").textContent = playerName;
+    document.getElementById("login").style.display = "none";
+    document.getElementById("game").style.display = "block";
 
-// Funkcja nasłuchująca zmian w kolekcji graczy i aktualizująca interfejs
-function updatePlayerList() {
-  playersRef.onSnapshot(snapshot => {
-    const playersList = document.getElementById("playersList");
-    const recipientSelect = document.getElementById("recipient");
-    playersList.innerHTML = "";
-    recipientSelect.innerHTML = "";
-    snapshot.forEach(doc => {
-      const player = doc.id;
-      const balance = doc.data().balance;
-      // Wyświetlamy gracza
-      let li = document.createElement("li");
-      li.textContent = `${player}: $${balance}`;
-      playersList.appendChild(li);
-      // Dodajemy opcję do przelewu, jeśli to nie jest aktualny gracz
-      if (player !== currentPlayer) {
-        let option = document.createElement("option");
-        option.value = player;
-        option.textContent = player;
-        recipientSelect.appendChild(option);
-      }
+    // Dodaj gracza do Firestore, jeśli go nie ma
+    db.collection("players").doc(playerName).get().then((doc) => {
+        if (!doc.exists) {
+            db.collection("players").doc(playerName).set({ balance: 1500 });
+        }
     });
-  });
+
+    loadPlayers();
 }
 
-// Funkcja przelewu pieniędzy między graczami
-function transferMoney() {
-  const to = document.getElementById("recipient").value;
-  const amount = parseInt(document.getElementById("amount").value);
-  if (!to || isNaN(amount) || amount <= 0) {
-    alert("Wpisz poprawną kwotę i odbiorcę!");
-    return;
-  }
-  const fromDoc = playersRef.doc(currentPlayer);
-  const toDoc = playersRef.doc(to);
-  db.runTransaction(async transaction => {
-    const fromSnap = await transaction.get(fromDoc);
-    if (!fromSnap.exists) return;
-    let fromBalance = fromSnap.data().balance;
-    if (fromBalance < amount) {
-      alert("Za mało pieniędzy!");
-      return;
-    }
-    transaction.update(fromDoc, { balance: fromBalance - amount });
-    const toSnap = await transaction.get(toDoc);
-    if (toSnap.exists) {
-      let toBalance = toSnap.data().balance;
-      transaction.update(toDoc, { balance: toBalance + amount });
-    }
-  }).then(() => {
-    alert("Przelew wykonany!");
-  }).catch(error => {
-    console.error("Błąd przy przelewie:", error);
-  });
+// WCZYTANIE LISTY GRACZY
+function loadPlayers() {
+    db.collection("players").onSnapshot((snapshot) => {
+        const playersList = document.getElementById("players");
+        const playersDropdown = document.getElementById("playersList");
+        playersList.innerHTML = "";
+        playersDropdown.innerHTML = "";
+
+        snapshot.forEach((doc) => {
+            const player = doc.id;
+            const balance = doc.data().balance;
+            const li = document.createElement("li");
+            li.textContent = `${player}: ${balance} $`;
+            playersList.appendChild(li);
+
+            if (player !== currentPlayer) {
+                const option = document.createElement("option");
+                option.value = player;
+                option.textContent = player;
+                playersDropdown.appendChild(option);
+            }
+
+            if (player === currentPlayer) {
+                document.getElementById("balance").textContent = balance;
+            }
+        });
+
+        if (currentPlayer === "Bank") {
+            document.getElementById("bankControls").style.display = "block";
+        }
+    });
 }
 
-// Funkcja resetująca grę – dostępna tylko dla gracza o nazwie "Bank"
+// PRZELEW PIENIĘDZY
+function sendMoney() {
+    const amount = parseInt(document.getElementById("amount").value);
+    const receiver = document.getElementById("playersList").value;
+
+    if (!amount || amount <= 0) {
+        alert("Podaj poprawną kwotę!");
+        return;
+    }
+
+    db.collection("players").doc(currentPlayer).get().then((doc) => {
+        if (doc.exists && doc.data().balance >= amount) {
+            db.collection("players").doc(currentPlayer).update({
+                balance: firebase.firestore.FieldValue.increment(-amount)
+            });
+
+            db.collection("players").doc(receiver).update({
+                balance: firebase.firestore.FieldValue.increment(amount)
+            });
+        } else {
+            alert("Nie masz wystarczających środków!");
+        }
+    });
+}
+
+// RESETOWANIE GRY (dla Banku)
 function resetGame() {
-  if (currentPlayer !== "Bank") {
-    alert("Tylko konto Bank może resetować grę!");
-    return;
-  }
-  playersRef.get().then(snapshot => {
-    snapshot.forEach(doc => {
-      doc.ref.update({ balance: 1500 });
-    });
-    alert("Gra zresetowana!");
-  });
-}
+    if (currentPlayer !== "Bank") {
+        alert("Tylko Bank może resetować grę!");
+        return;
+    }
 
-// Funkcja wylogowania
-function logout() {
-  localStorage.removeItem("monopolyUser");
-  location.reload();
-}
-
-// Funkcja żądająca pozwolenia na powiadomienia (Firebase Messaging)
-function requestNotificationPermission() {
-  const messaging = firebase.messaging();
-  messaging.requestPermission()
-    .then(() => messaging.getToken())
-    .then(token => {
-      console.log("Token:", token);
-      // Zapisujemy token użytkownika w dokumencie gracza (opcjonalnie do wysyłania powiadomień później)
-      playersRef.doc(currentPlayer).set({ token: token }, { merge: true });
-    })
-    .catch(err => {
-      console.error("Brak zgody na powiadomienia", err);
+    db.collection("players").get().then((snapshot) => {
+        snapshot.forEach((doc) => {
+            db.collection("players").doc(doc.id).update({ balance: 1500 });
+        });
     });
 }
-
-// Jeśli użytkownik jest już zalogowany, automatycznie logujemy go
-if (currentPlayer) {
-  loginUser(currentPlayer);
-}
-</script>
