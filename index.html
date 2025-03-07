@@ -3,30 +3,31 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Monopoly Bank</title>
+  <title>Monopoly Cash Bank</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Używamy Firebase wersji 8.10.0 -->
+  <!-- Używamy Firebase w wersji 8.10.0, która nie korzysta z modułów -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-messaging.js"></script>
-  <!-- Ładujemy nasz skrypt po załadowaniu bibliotek Firebase -->
   <script src="script.js" defer></script>
 </head>
 <body>
   <div class="container">
     <h1>Monopoly Cash Bank</h1>
 
+    <!-- Sekcja dołączenia do gry -->
     <div id="loginSection">
       <input type="text" id="playerName" placeholder="Wpisz swoją nazwę">
       <button onclick="joinGame()">Dołącz</button>
     </div>
 
+    <!-- Panel Banku - widoczny tylko, gdy gracz wpisze nazwę 'Bank' -->
     <div id="bankSection" style="display: none;">
       <h2>Panel Banku</h2>
       <button onclick="resetGame()">Zresetuj grę</button>
     </div>
 
+    <!-- Sekcja gry - lista graczy oraz możliwość przelewu pieniędzy -->
     <div id="gameSection" style="display: none;">
       <h2>Gracze</h2>
       <ul id="playersList"></ul>
