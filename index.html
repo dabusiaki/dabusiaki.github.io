@@ -15,7 +15,8 @@
 <body>
     <h1>Monopoly Bank</h1>
     <input type="text" id="playerName" placeholder="Nazwa gracza">
-    <button onclick="addPlayer()">Dodaj gracza</button>
+    <button onclick="addPlayer()">Dołącz</button>
+    <h2>Lista graczy</h2>
     <div id="players"></div>
     
     <script>
@@ -35,7 +36,7 @@
         function addPlayer() {
             const name = document.getElementById("playerName").value.trim();
             if (name) {
-                playersRef.doc(name).set({ balance: 1500 });
+                playersRef.doc(name).set({ balance: 1500 }, { merge: true });
             }
         }
         
@@ -48,9 +49,29 @@
             });
         }
         
+        function transferMoney(from, to, amount) {
+            if (from === to || amount <= 0) return;
+            const fromDoc = playersRef.doc(from);
+            const toDoc = playersRef.doc(to);
+            
+            db.runTransaction(transaction => {
+                return transaction.get(fromDoc).then(fromSnap => {
+                    if (!fromSnap.exists) return;
+                    let fromBalance = fromSnap.data().balance;
+                    if (fromBalance >= amount) {
+                        transaction.update(fromDoc, { balance: fromBalance - amount });
+                        return transaction.get(toDoc).then(toSnap => {
+                            if (toSnap.exists) {
+                                transaction.update(toDoc, { balance: toSnap.data().balance + amount });
+                            }
+                        });
+                    }
+                });
+            });
+        }
+        
         function renderPlayers() {
             const playersDiv = document.getElementById("players");
-            playersDiv.innerHTML = "";
             playersRef.onSnapshot(snapshot => {
                 playersDiv.innerHTML = "";
                 snapshot.forEach(doc => {
@@ -61,6 +82,9 @@
                             <p class="balance">$${data.balance}</p>
                             <button onclick="updateBalance('${doc.id}', 100)">+100</button>
                             <button onclick="updateBalance('${doc.id}', -100)">-100</button>
+                            <input type="text" id="transferTo-${doc.id}" placeholder="Odbiorca">
+                            <input type="number" id="transferAmount-${doc.id}" placeholder="Kwota">
+                            <button onclick="transferMoney('${doc.id}', document.getElementById('transferTo-${doc.id}').value, parseInt(document.getElementById('transferAmount-${doc.id}').value))">Przelej</button>
                         </div>
                     `;
                 });
