@@ -1,135 +1,110 @@
-// Firebase konfiguracja
+// Konfiguracja Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
-  authDomain: "rodzinkataski.firebaseapp.com",
-  projectId: "rodzinkataski",
-  storageBucket: "rodzinkataski.appspot.com",
-  messagingSenderId: "921333004895",
-  appId: "1:921333004895:web:b22bdf6d54a32a4838b9ea",
-  measurementId: "G-JM7KL8KDEC"
+    apiKey: "AIzaSyA04bN5...",
+    authDomain: "rodzinkataski.firebaseapp.com",
+    projectId: "rodzinkataski",
+    storageBucket: "rodzinkataski.appspot.com",
+    messagingSenderId: "921333004895",
+    appId: "1:921333004895:web:b22bdf6d54a32a4838b9ea",
+    measurementId: "G-JM7KL8KDEC"
 };
 
-// Inicjalizacja Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
-const messaging = firebase.messaging();
+const playersRef = db.collection("players");
 
-// Użytkownicy i hasła
-const users = {
-  Tata: "dabek1983",
-  Mama: "chuda1403",
-  Kuba: "Kubus2008",
-  Agatka: "Aga123"
-};
+let currentPlayer = localStorage.getItem("monopolyUser");
 
-// Sprawdzanie zalogowanego użytkownika w localStorage
-function checkLogin() {
-  const savedUser = localStorage.getItem('username');
-  if (savedUser) {
-    document.getElementById('username').textContent = savedUser;
-    document.getElementById('login-section').style.display = 'none';  // Ukrycie sekcji logowania
-  } else {
-    loginUser();
-  }
+document.addEventListener("DOMContentLoaded", () => {
+    if (currentPlayer) {
+        loginUser(currentPlayer);
+    }
+});
+
+function joinGame() {
+    const name = document.getElementById("playerName").value.trim();
+    if (!name) return;
+
+    currentPlayer = name;
+    localStorage.setItem("monopolyUser", name);
+
+    playersRef.doc(name).set({ balance: 1500 }, { merge: true })
+        .then(() => loginUser(name));
 }
 
-// Funkcja logowania
-function loginUser() {
-  const username = prompt('Podaj nazwę użytkownika');
-  const password = prompt('Podaj hasło');
+function loginUser(name) {
+    document.getElementById("loginSection").style.display = "none";
+    document.getElementById("gameSection").style.display = "block";
+    document.getElementById("logoutBtn").style.display = "block";
 
-  // Sprawdzanie loginu i hasła
-  if (users[username] && users[username] === password) {
-    localStorage.setItem('username', username);
-    document.getElementById('username').textContent = username;
-    document.getElementById('login-section').style.display = 'none';  // Ukrycie przycisku logowania
-    requestNotificationPermission(); // Żądanie pozwolenia na powiadomienia
-  } else {
-    alert('Błędny login lub hasło');
-    document.getElementById('login-section').style.display = 'block'; // Pokaż przycisk „Zaloguj ponownie”
-  }
+    if (name === "Bank") {
+        document.getElementById("bankSection").style.display = "block";
+    }
+
+    updatePlayerList();
 }
 
-// Ponowne logowanie po błędzie
-document.getElementById('retry-login').addEventListener('click', loginUser);
+function updatePlayerList() {
+    playersRef.onSnapshot(snapshot => {
+        const playersList = document.getElementById("playersList");
+        const recipientSelect = document.getElementById("recipient");
+        
+        playersList.innerHTML = "";
+        recipientSelect.innerHTML = "";
 
-// Wylogowanie
-document.getElementById('logout').addEventListener('click', () => {
-  localStorage.removeItem('username');
-  location.reload();
-});
-
-// Dodawanie do listy zakupów
-document.getElementById('add-item').addEventListener('click', () => {
-  const newItem = document.getElementById('new-item').value;
-  const username = localStorage.getItem('username');
-  
-  if (newItem && username) {
-    db.collection('shoppingList').add({
-      item: newItem,
-      addedBy: username,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-      document.getElementById('new-item').value = '';
-      console.log('Dodano przedmiot do listy');
-      showNotification(newItem, username); // Wyślij powiadomienie w przeglądarce
-    }).catch((error) => {
-      console.error('Błąd przy dodawaniu przedmiotu:', error);
-    });
-  } else {
-    alert('Wprowadź nazwę przedmiotu');
-  }
-});
-
-// Pobieranie i wyświetlanie listy
-db.collection('shoppingList').orderBy('timestamp', 'desc').onSnapshot(snapshot => {
-  const shoppingList = document.getElementById('shopping-list');
-  shoppingList.innerHTML = '';
-  snapshot.forEach(doc => {
-    const item = doc.data().item;
-    const addedBy = doc.data().addedBy;
-    const li = document.createElement('li');
-    li.textContent = `${item} (dodane przez ${addedBy})`;
-    shoppingList.appendChild(li);
-  });
-});
-
-// Prośba o pozwolenie na powiadomienia
-function requestNotificationPermission() {
-  messaging.requestPermission()
-    .then(() => messaging.getToken())
-    .then((token) => {
-      console.log('Token:', token);
-      const username = localStorage.getItem('username');
-      // Zapisz token w bazie danych
-      db.collection('users').doc(username).set({
-        token: token
-      }, { merge: true });
-    })
-    .catch((err) => {
-      console.error('Brak zgody na powiadomienia', err);
+        snapshot.forEach(doc => {
+            const player = doc.id;
+            const balance = doc.data().balance;
+            
+            let li = document.createElement("li");
+            li.textContent = `${player}: $${balance}`;
+            playersList.appendChild(li);
+            
+            if (player !== currentPlayer) {
+                let option = document.createElement("option");
+                option.value = player;
+                option.textContent = player;
+                recipientSelect.appendChild(option);
+            }
+        });
     });
 }
 
-// Funkcja do pokazywania powiadomienia w przeglądarce
-function showNotification(item, addedBy) {
-  const notificationTitle = 'Nowy przedmiot dodany';
-  const notificationOptions = {
-    body: `${addedBy} dodał przedmiot: ${item}`,
-    icon: 'https://yourapp.com/icon.png' // Podaj tutaj link do ikony
-  };
-  
-  // Sprawdź, czy przeglądarka obsługuje powiadomienia
-  if (Notification.permission === 'granted') {
-    new Notification(notificationTitle, notificationOptions);
-  } else if (Notification.permission !== 'denied') {
-    Notification.requestPermission().then(permission => {
-      if (permission === 'granted') {
-        new Notification(notificationTitle, notificationOptions);
-      }
+function transferMoney() {
+    const to = document.getElementById("recipient").value;
+    const amount = parseInt(document.getElementById("amount").value);
+    
+    if (!to || amount <= 0) return;
+
+    const fromDoc = playersRef.doc(currentPlayer);
+    const toDoc = playersRef.doc(to);
+
+    db.runTransaction(async transaction => {
+        const fromSnap = await transaction.get(fromDoc);
+        if (!fromSnap.exists) return;
+
+        let fromBalance = fromSnap.data().balance;
+        if (fromBalance >= amount) {
+            transaction.update(fromDoc, { balance: fromBalance - amount });
+
+            const toSnap = await transaction.get(toDoc);
+            if (toSnap.exists) {
+                let toBalance = toSnap.data().balance;
+                transaction.update(toDoc, { balance: toBalance + amount });
+            }
+        }
     });
-  }
 }
 
-// Wywołanie sprawdzania logowania
-checkLogin();
+function resetGame() {
+    if (currentPlayer !== "Bank") return;
+
+    playersRef.get().then(snapshot => {
+        snapshot.forEach(doc => doc.ref.delete());
+    });
+}
+
+function logout() {
+    localStorage.removeItem("monopolyUser");
+    location.reload();
+}
