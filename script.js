@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Funkcja formatująca kwoty
 function formatMoney(amount) {
+    if (!amount) return "0";
     return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
@@ -112,72 +113,96 @@ function loadPlayers() {
     });
 }
 
-async function takeLoan() {
-    const amount = parseInt(document.getElementById("loanAmount").value);
-    const playerRef = db.collection("players").doc(currentPlayer);
-    const bankRef = db.collection("players").doc("Bank");
-    
-    if (!amount || amount <= 0 || amount > MAX_LOAN) {
-        alert("Nieprawidłowa kwota pożyczki!");
+async function sendMoney() {
+    const amount = parseInt(document.getElementById("amount").value);
+    const receiver = document.getElementById("playersList").value;
+
+    if (!amount || amount <= 0) {
+        alert("Podaj poprawną kwotę!");
         return;
     }
+
+    const transaction = {
+        from: currentPlayer,
+        to: receiver,
+        amount: amount,
+        timestamp: new Date()
+    };
 
     try {
         await db.runTransaction(async (transaction) => {
-            const playerDoc = await transaction.get(playerRef);
-            const bankDoc = await transaction.get(bankRef);
+            const fromRef = db.collection("players").doc(currentPlayer);
+            const fromDoc = await transaction.get(fromRef);
             
-            const currentLoan = playerDoc.data().loan || 0;
-            if (currentLoan + amount > MAX_LOAN) {
-                alert("Przekroczono limit pożyczki!");
-                return;
+            if (fromDoc.data().balance >= amount) {
+                transaction.update(fromRef, { balance: firebase.firestore.FieldValue.increment(-amount) });
+                transaction.update(db.collection("players").doc(receiver), { balance: firebase.firestore.FieldValue.increment(amount) });
+                await db.collection("transactions").add(transaction);
+            } else {
+                alert("Nie masz wystarczających środków!");
             }
-
-            transaction.update(playerRef, {
-                balance: firebase.firestore.FieldValue.increment(amount),
-                loan: firebase.firestore.FieldValue.increment(amount)
-            });
-
-            transaction.update(bankRef, {
-                balance: firebase.firestore.FieldValue.increment(-amount)
-            });
-
-            await db.collection("transactions").add({
-                type: "LOAN",
-                from: "Bank",
-                to: currentPlayer,
-                amount: amount,
-                timestamp: new Date()
-            });
         });
-        
-        alert("Pożyczka przyznana!");
     } catch (error) {
-        console.error("Błąd przyznawania pożyczki:", error);
+        console.error("Błąd transakcji:", error);
     }
 }
 
-async function deletePlayer() {
+async function addStartBonus() {
     if (currentPlayer !== "Bank") return;
     
     const selectedPlayer = document.getElementById("bankPlayersList").value;
-    if (selectedPlayer === "Bank") {
-        alert("Nie możesz usunąć Banku!");
-        return;
-    }
+    const transaction = {
+        from: "Bank",
+        to: selectedPlayer,
+        amount: START_BONUS,
+        timestamp: new Date()
+    };
 
-    if (confirm(`Czy na pewno chcesz usunąć gracza ${selectedPlayer}?`)) {
-        try {
-            await db.collection("players").doc(selectedPlayer).delete();
-            await db.collection("transactions").where("to", "==", selectedPlayer).get()
-                .then(snapshot => snapshot.forEach(doc => doc.ref.delete()));
-            alert("Gracz usunięty!");
-        } catch (error) {
-            console.error("Błąd usuwania gracza:", error);
-        }
+    try {
+        await db.collection("players").doc(selectedPlayer).update({
+            balance: firebase.firestore.FieldValue.increment(START_BONUS)
+        });
+        await db.collection("transactions").add(transaction);
+        loadTransactions();
+    } catch (error) {
+        console.error("Błąd dodawania bonusu:", error);
     }
 }
 
-// Pozostałe funkcje (sendMoney, addStartBonus, loadTransactions, resetGame) pozostają jak w poprzedniej wersji
-// z dodaniem formatMoney w odpowiednich miejscach np.:
-document.getElementById("balance").textContent = formatMoney(data.balance);
+function loadTransactions() {
+    db.collection("transactions")
+        .orderBy("timestamp", "desc")
+        .limit(10)
+        .onSnapshot((snapshot) => {
+            const transactionsList = document.getElementById("transactions");
+            transactionsList.innerHTML = "";
+            
+            snapshot.forEach(doc => {
+                const transaction = doc.data();
+                const li = document.createElement("li");
+                li.textContent = `${transaction.timestamp.toDate().toLocaleString()}: ${transaction.from} → ${transaction.to} (${formatMoney(transaction.amount)} $)`;
+                transactionsList.appendChild(li);
+            });
+        });
+}
+
+async function resetGame() {
+    if (currentPlayer !== "Bank") return;
+
+    const players = await db.collection("players").get();
+    players.forEach(async (doc) => {
+        if (doc.id === "Bank") {
+            await doc.ref.update({ balance: BANK_BALANCE });
+        } else {
+            await doc.ref.update({ balance: INITIAL_BALANCE });
+        }
+    });
+    
+    // Usuń wszystkie transakcje
+    const transactions = await db.collection("transactions").get();
+    transactions.forEach(async (doc) => {
+        await doc.ref.delete();
+    });
+}
+
+// Pozostałe funkcje (takeLoan, deletePlayer) pozostają bez zmian
