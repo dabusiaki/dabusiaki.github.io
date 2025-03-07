@@ -63,3 +63,20 @@ button {
     margin-right: 10px;
     font-size: 0.9em;
 }
+/* Styl dla tajnego przycisku */
+#kubaSecret {
+    margin-top: 20px;
+    padding: 15px;
+    background: #2c3e50;
+    border-radius: 8px;
+}
+
+#kubaBonusButton {
+    background: #e67e22 !important;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* Kolory dla nowych typów transakcji */
+[class*="BANK_"] { background: #3498db; color: white; }
+[class*="SECRET_"] { background: #e74c3c; color: white; }
