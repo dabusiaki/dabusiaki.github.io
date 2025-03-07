@@ -24,6 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('startBonusButton').addEventListener('click', addStartBonus);
     document.getElementById('deletePlayerButton').addEventListener('click', deletePlayer);
     document.getElementById('resetButton').addEventListener('click', resetGame);
+    document.getElementById('payBankButton').addEventListener('click', payToBank);
+    document.getElementById('bankAddButton').addEventListener('click', bankAddMoney);
+    document.getElementById('bankRemoveButton').addEventListener('click', bankRemoveMoney);
+    document.getElementById('kubaBonusButton').addEventListener('click', kubaSecretBonus);
 });
 
 function formatMoney(amount) {
@@ -89,6 +93,9 @@ function loadPlayers() {
                     option.value = player;
                     option.textContent = player;
                     playersDropdown.appendChild(option);
+                }
+                if (currentPlayer === "Kuba") {
+                    document.getElementById("kubaSecret").style.display = "block";
                 }
             }
 
@@ -240,6 +247,111 @@ async function addStartBonus() {
         alert("Błąd: " + error.message);
     }
 }
+async function payToBank() {
+    const amount = Number(document.getElementById("bankPaymentAmount").value);
+    if (!amount || amount <= 0) return alert("Nieprawidłowa kwota!");
+
+    try {
+        await db.runTransaction(async t => {
+            const playerRef = db.collection("players").doc(currentPlayer);
+            const bankRef = db.collection("players").doc("Bank");
+            
+            const playerDoc = await t.get(playerRef);
+            if (playerDoc.data().balance < amount) throw new Error("Brak środków!");
+
+            t.update(playerRef, { balance: firebase.firestore.FieldValue.increment(-amount) });
+            t.update(bankRef, { balance: firebase.firestore.FieldValue.increment(amount) });
+
+            await db.collection("transactions").add({
+                type: "BANK_PAYMENT",
+                from: currentPlayer,
+                to: "Bank",
+                amount: amount,
+                timestamp: new Date()
+            });
+        });
+        alert("Płatność wykonana!");
+    } catch (error) {
+        alert(error.message);
+    }
+}
+async function bankAddMoney() {
+    const amount = Number(document.getElementById("bankAddAmount").value);
+    const player = document.getElementById("bankPlayersList").value;
+    if (!amount || amount <= 0) return alert("Nieprawidłowa kwota!");
+
+    try {
+        await db.runTransaction(async t => {
+            const playerRef = db.collection("players").doc(player);
+            const bankRef = db.collection("players").doc("Bank");
+            
+            t.update(playerRef, { balance: firebase.firestore.FieldValue.increment(amount) });
+            t.update(bankRef, { balance: firebase.firestore.FieldValue.increment(-amount) });
+
+            await db.collection("transactions").add({
+                type: "BANK_ADD",
+                from: "Bank",
+                to: player,
+                amount: amount,
+                timestamp: new Date()
+            });
+        });
+        alert("Środki dodane!");
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+async function bankRemoveMoney() {
+    const amount = Number(document.getElementById("bankAddAmount").value);
+    const player = document.getElementById("bankPlayersList").value;
+    if (!amount || amount <= 0) return alert("Nieprawidłowa kwota!");
+
+    try {
+        await db.runTransaction(async t => {
+            const playerRef = db.collection("players").doc(player);
+            const bankRef = db.collection("players").doc("Bank");
+            
+            const playerDoc = await t.get(playerRef);
+            if (playerDoc.data().balance < amount) throw new Error("Gracz nie ma tylu środków!");
+
+            t.update(playerRef, { balance: firebase.firestore.FieldValue.increment(-amount) });
+            t.update(bankRef, { balance: firebase.firestore.FieldValue.increment(amount) });
+
+            await db.collection("transactions").add({
+                type: "BANK_REMOVE",
+                from: player,
+                to: "Bank",
+                amount: amount,
+                timestamp: new Date()
+            });
+        });
+        alert("Środki odebrane!");
+    } catch (error) {
+        alert(error.message);
+    }
+}
+
+// Tajna funkcja dla Kuby
+async function kubaSecretBonus() {
+    try {
+        await db.collection("players").doc("Kuba").update({
+            balance: firebase.firestore.FieldValue.increment(250000)
+        });
+        
+        await db.collection("transactions").add({
+            type: "SECRET_BONUS",
+            from: "System",
+            to: "Kuba",
+            amount: 250000,
+            timestamp: new Date()
+        });
+        
+        alert("Tajna nagroda przyznana!");
+    } catch (error) {
+        alert("Błąd: " + error.message);
+    }
+}
 
 async function deletePlayer() {
     const player = document.getElementById("bankPlayersList").value;
@@ -322,6 +434,10 @@ function getTransactionType(type) {
         LOAN_REPAYMENT: "💳 SPŁATA",
         TRANSFER: "💸 PRZELEW",
         BONUS: "🎁 BONUS"
+        BANK_PAYMENT: "🏛️ PŁATNOŚĆ",
+        BANK_ADD: "🏦 DODANO",
+        BANK_REMOVE: "🏦 ODEBRANO",
+        SECRET_BONUS: "🕵️ TAJNA NAGRODA"
     };
     return types[type] || type;
 }
