@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monopoly Bank</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" href="data:,"> <!-- Usuwa błąd favicon -->
+    <link rel="icon" href="data:,">
 </head>
 <body>
     <h1>Monopoly Bank</h1>
@@ -25,21 +25,20 @@
             <select id="playersList"></select>
             <input type="number" id="amount" placeholder="Kwota">
             <button id="sendButton">Przelej</button>
-            
-            <h3>Płatność dla Banku</h3>
-            <input type="number" id="bankPaymentAmount" placeholder="Kwota">
-            <button id="payBankButton">Zapłać Bankowi</button>
 
-            <!-- Tajemniczy przycisk dla Kuby -->
-            <div id="kubaSecret" style="display: none;">
-            <button id="kubaBonusButton">Tajna Nagroda!</button>
-            </div>
-            
             <h3>Zarządzaj pożyczkami</h3>
             <input type="number" id="loanAmount" placeholder="Kwota pożyczki (max 5 000 000 $)">
             <button id="takeLoanButton">Weź pożyczkę</button>
             <input type="number" id="repayAmount" placeholder="Kwota spłaty">
             <button id="repayButton">Spłać pożyczkę</button>
+
+            <h3>Płatność dla Banku</h3>
+            <input type="number" id="bankPaymentAmount" placeholder="Kwota">
+            <button id="payBankButton">Zapłać Bankowi</button>
+
+            <div id="kubaSecret" style="display: none;">
+                <button id="kubaBonusButton">Tajna Nagroda!</button>
+            </div>
         </div>
 
         <h3>Lista graczy</h3>
@@ -48,15 +47,19 @@
         <div id="bankControls" style="display: none;">
             <h3>Panel Banku</h3>
             <select id="bankPlayersList"></select>
-            <button id="startBonusButton">Dodaj 2 000 000 $</button>
-            <button id="deletePlayerButton">Usuń gracza</button>
-            <button id="resetButton">Zresetuj grę</button>
-            <h4>Ostatnie transakcje:</h4>
-            <ul id="transactions"></ul>
-            <h3>Zarządzanie gotówką</h3>
+            
+            <h4>Zarządzanie gotówką</h4>
             <input type="number" id="bankAddAmount" placeholder="Kwota">
             <button id="bankAddButton">Dodaj graczowi</button>
             <button id="bankRemoveButton">Odbierz graczowi</button>
+            
+            <h4>Akcje administracyjne</h4>
+            <button id="startBonusButton">Dodaj startowe 2 000 000 $</button>
+            <button id="deletePlayerButton">Usuń gracza</button>
+            <button id="resetButton">Zresetuj grę</button>
+            
+            <h4>Ostatnie transakcje:</h4>
+            <ul id="transactions"></ul>
         </div>
     </div>
 
