@@ -1,4 +1,4 @@
-// Konfiguracja Firebase – używamy wersji 8.10.0
+// Konfiguracja Firebase – korzystamy z wersji 8.10.0
 const firebaseConfig = {
   apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
   authDomain: "rodzinkataski.firebaseapp.com",
@@ -11,10 +11,11 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+// Kolekcja graczy w Firestore
 const playersRef = db.collection("players");
 
-// Prostota logowania – każdy wpisuje tylko swoją nazwę, bez hasła.
-// Tylko gracz o nazwie "Bank" ma dodatkowe uprawnienia.
+// Użytkownik nie musi się logować hasłem – każdy wpisuje tylko swoją nazwę.
+// Jeśli gracz wpisze "Bank", dodatkowy panel zostanie wyświetlony.
 let currentPlayer = localStorage.getItem("monopolyUser") || "";
 
 // Funkcja dołączenia do gry
@@ -26,12 +27,12 @@ function joinGame() {
   }
   currentPlayer = name;
   localStorage.setItem("monopolyUser", name);
-  // Każdy gracz zaczyna z saldem 1500 (lub pozostawiamy istniejące saldo, jeśli już jest)
+  // Każdy gracz zaczyna z saldem 1500 (jeśli jeszcze nie ma wpisu)
   playersRef.doc(name).set({ balance: 1500 }, { merge: true })
     .then(() => loginUser(name));
 }
 
-// Funkcja logowania – ukrywa sekcję logowania i pokazuje sekcję gry
+// Funkcja logująca – ukrywa sekcję logowania, pokazuje sekcję gry oraz panel Bank, jeśli dotyczy.
 function loginUser(name) {
   document.getElementById("loginSection").style.display = "none";
   document.getElementById("gameSection").style.display = "block";
@@ -43,7 +44,7 @@ function loginUser(name) {
   requestNotificationPermission();
 }
 
-// Funkcja aktualizująca listę graczy (nasłuch Firestore)
+// Funkcja aktualizująca listę graczy – nasłuchuje zmian w Firestore
 function updatePlayerList() {
   playersRef.onSnapshot(snapshot => {
     const playersList = document.getElementById("playersList");
@@ -53,11 +54,11 @@ function updatePlayerList() {
     snapshot.forEach(doc => {
       const player = doc.id;
       const balance = doc.data().balance;
-      // Wyświetlamy gracza
+      // Wyświetlamy gracza i jego saldo
       let li = document.createElement("li");
       li.textContent = `${player}: $${balance}`;
       playersList.appendChild(li);
-      // Dodajemy opcję do przelewu, jeśli to nie jest aktualny gracz
+      // Jeśli to nie jest aktualny gracz, dodajemy go do listy odbiorców przelewu
       if (player !== currentPlayer) {
         let option = document.createElement("option");
         option.value = player;
@@ -99,7 +100,7 @@ function transferMoney() {
   });
 }
 
-// Funkcja resetująca grę – dostępna tylko dla gracza o nazwie "Bank"
+// Funkcja resetująca grę – dostępna tylko dla gracza "Bank"
 function resetGame() {
   if (currentPlayer !== "Bank") {
     alert("Tylko konto Bank może resetować grę!");
@@ -119,22 +120,21 @@ function logout() {
   location.reload();
 }
 
-// Funkcja żądająca pozwolenia na powiadomienia
+// Funkcja żądająca pozwolenia na powiadomienia (Firebase Messaging)
 function requestNotificationPermission() {
   const messaging = firebase.messaging();
   messaging.requestPermission()
     .then(() => messaging.getToken())
     .then(token => {
       console.log("Token:", token);
-      // Zapisujemy token użytkownika w Firestore (możesz wykorzystać do wysyłania powiadomień później)
-      playersRef.doc(currentPlayer).set({ token: token }, { merge: true });
+      // Zapisujemy token użytkownika w dokumencie gracza, żeby ewentualnie móc wysyłać powiadomienia\n      playersRef.doc(currentPlayer).set({ token: token }, { merge: true });
     })
     .catch(err => {
       console.error("Brak zgody na powiadomienia", err);
     });
 }
 
-// Jeśli użytkownik jest już zalogowany, automatycznie logujemy
+// Jeśli użytkownik jest już zalogowany, automatycznie go logujemy
 if (currentPlayer) {
   loginUser(currentPlayer);
 }
