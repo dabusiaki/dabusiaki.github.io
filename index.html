@@ -3,72 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monopoly Bank</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" href="data:,">
+    <title>Dirty Capital - Underground Tycoon</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="app.js"></script>
 </head>
 <body>
-    <h1>Monopoly Bank</h1>
-
-    <div id="login">
-        <input type="text" id="playerName" placeholder="Wpisz swoją nazwę">
-        <button id="joinButton">Dołącz</button>
-    </div>
-
-    <div id="game" style="display: none;">
-        <h2>Witaj, <span id="currentPlayerName"></span>!</h2>
-        <p>Twój stan konta: <span id="balance">0</span> $</p>
-        <p>Aktywna pożyczka: <span id="currentLoan">0</span> $</p>
-
-        <div id="playerControls">
-            <h3>Przelej pieniądze</h3>
-            <select id="playersList"></select>
-            <input type="number" id="amount" placeholder="Kwota">
-            <button id="sendButton">Przelej</button>
-
-            <h3>Zarządzaj pożyczkami</h3>
-            <input type="number" id="loanAmount" placeholder="Kwota pożyczki (max 5 000 000 $)">
-            <button id="takeLoanButton">Weź pożyczkę</button>
-            <input type="number" id="repayAmount" placeholder="Kwota spłaty">
-            <button id="repayButton">Spłać pożyczkę</button>
-
-            <h3>Płatność dla Banku</h3>
-            <input type="number" id="bankPaymentAmount" placeholder="Kwota">
-            <button id="payBankButton">Zapłać Bankowi</button>
-
-            <div id="kubaSecret" style="display: none;">
-                <button id="kubaBonusButton">Tajna Nagroda!</button>
-            </div>
-        </div>
-
-        <h3>Lista graczy</h3>
-        <ul id="players"></ul>
-
-        <div id="bankControls" style="display: none;">
-            <h3>Panel Banku</h3>
-            <select id="bankPlayersList"></select>
-            
-            <h4>Szybkie akcje</h4>
-            <div class="quick-actions">
-                <button class="quick-action-btn" data-amount="500000">+500 000 $</button>
-                <button class="quick-action-btn" data-amount="-500000">-500 000 $</button>
-                <button class="quick-action-btn" data-amount="1000000">+1 000 000 $</button>
-                <button class="quick-action-btn" data-amount="-1000000">-1 000 000 $</button>
-                <button class="quick-action-btn" data-amount="2000000">+2 000 000 $</button>
-                <button class="quick-action-btn" data-amount="-2000000">-2 000 000 $</button>
-            </div>
-
-            <h4>Akcje administracyjne</h4>
-            <button id="deletePlayerButton">Usuń gracza</button>
-            <button id="resetButton">Zresetuj grę</button>
-            
-            <h4>Ostatnie transakcje:</h4>
-            <ul id="transactions"></ul>
+    <div id="auth-screen" class="container">
+        <div class="auth-box">
+            <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80" 
+                 class="auth-image">
+            <h1><i class="fa-solid fa-user-secret"></i> Dirty Capital</h1>
+            <button id="play-btn"><i class="fa-solid fa-play"></i> Rozpocznij grę</button>
+            <p class="disclaimer">Twoja sesja zostanie zapamiętana w przeglądarce</p>
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="script.js"></script>
+    <div id="game-screen" class="container hidden">
+        <header>
+            <div class="money-display">
+                <div class="cash legal">
+                    <i class="fa-solid fa-coins"></i>
+                    <span id="legal-cash">0</span>
+                </div>
+                <div class="cash illegal">
+                    <i class="fa-solid fa-briefcase"></i>
+                    <span id="illegal-cash">0</span>
+                </div>
+            </div>
+            <button id="logout-btn" class="btn-danger"><i class="fa-solid fa-power-off"></i></button>
+        </header>
+
+        <section class="city-map">
+            <img src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-1.2.1&auto=format&fit=crop&w=1353&q=80" 
+                 class="map-image">
+            <div class="districts-overlay" id="districts-container"></div>
+        </section>
+
+        <section class="business-panel">
+            <h2><i class="fa-solid fa-building"></i> Dostępne Inwestycje</h2>
+            <div class="business-grid" id="business-list"></div>
+        </section>
+
+        <div class="black-box">
+            <h3><i class="fa-solid fa-archive"></i> Czarna Skrzynka (<span id="black-box-count">0</span>)</h3>
+            <ul id="crimes-list"></ul>
+        </div>
+    </div>
+
+    <div id="loader" class="loader hidden"></div>
 </body>
 </html>
