@@ -1,20 +1,19 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
-  getFirestore, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc,
-  increment,
-  onSnapshot 
+    getFirestore, 
+    doc, 
+    setDoc, 
+    getDoc, 
+    updateDoc,
+    increment,
+    onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { 
-  getAuth, 
-  signInAnonymously, 
-  onAuthStateChanged 
+    getAuth, 
+    signInAnonymously 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// TUTAJ WKLEJ SWOJĄ KONFIGURACJĘ Z FIREBASE
+// 🔥 ZASTĄP TYM SWOIMI DANYMI Z FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
   authDomain: "rodzinkataski.firebaseapp.com",
@@ -28,61 +27,79 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
-
 let playerRef = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-  const startBtn = document.getElementById('start-game');
-  
-  startBtn.addEventListener('click', async () => {
-    try {
-      const userCredential = await signInAnonymously(auth);
-      const user = userCredential.user;
-      
-      playerRef = doc(db, "players", user.uid);
-      const docSnap = await getDoc(playerRef);
-      
-      if (!docSnap.exists()) {
-        await setDoc(playerRef, {
-          cash: { clean: 5000, dirty: 0 },
-          inventory: { cocaine: 0, meth: 0, weed: 0 },
-          territories: [],
-          heat: 0
-        });
-      }
-      
-      onSnapshot(playerRef, (doc) => {
-        const data = doc.data();
-        updateUI(data);
-      });
-      
-      document.getElementById('login-screen').classList.add('hidden');
-      document.getElementById('game-screen').classList.remove('hidden');
-      
-    } catch (error) {
-      console.error("Błąd inicjalizacji:", error);
-      alert("Błąd połączenia z Firebase! Sprawdź konsolę.");
-    }
-  });
+    const startBtn = document.getElementById('start-game');
+    
+    startBtn.addEventListener('click', async () => {
+        try {
+            const userCredential = await signInAnonymously(auth);
+            const user = userCredential.user;
+            
+            // Inicjalizuj gracza
+            playerRef = doc(db, "players", user.uid);
+            const docSnap = await getDoc(playerRef);
+            
+            if (!docSnap.exists()) {
+                await setDoc(playerRef, {
+                    cash: {
+                        clean: 5000,
+                        dirty: 0
+                    },
+                    inventory: {
+                        cocaine: 0,
+                        meth: 0,
+                        weed: 0
+                    },
+                    heat: 0,
+                    lastLogin: new Date().toISOString()
+                });
+            }
+
+            // Subskrybuj zmiany
+            onSnapshot(playerRef, (doc) => {
+                if (doc.exists()) {
+                    const data = doc.data();
+                    updateUI(data);
+                }
+            });
+
+            // Przełącz ekrany
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+
+        } catch (error) {
+            console.error("Błąd inicjalizacji:", error);
+            alert("Błąd systemu: " + error.message);
+        }
+    });
 });
 
 function updateUI(data) {
-  document.getElementById('clean-cash').textContent = `$${data.cash.clean}`;
-  document.getElementById('dirty-cash').textContent = `($${data.cash.dirty})`;
-  document.getElementById('police-heat').value = data.heat;
-  
-  for (const drug of ['cocaine', 'meth', 'weed']) {
-    document.getElementById(`${drug}-amount`).textContent = data.inventory[drug];
-  }
+    // Pieniądze
+    document.getElementById('clean-cash').textContent = `$${data.cash.clean}`;
+    document.getElementById('dirty-cash').textContent = `($${data.cash.dirty})`;
+    
+    // Narkotyki
+    document.getElementById('cocaine-amount').textContent = data.inventory.cocaine;
+    document.getElementById('meth-amount').textContent = data.inventory.meth;
+    document.getElementById('weed-amount').textContent = data.inventory.weed;
+    
+    // Poziom zagrożenia
+    document.getElementById('police-heat').value = data.heat;
 }
 
 window.produceDrug = async (drugType) => {
-  try {
-    await updateDoc(playerRef, {
-      [`inventory.${drugType}`]: increment(50),
-      'heat': increment(5)
-    });
-  } catch (error) {
-    console.error("Błąd produkcji:", error);
-  }
+    if (!playerRef) return;
+
+    try {
+        await updateDoc(playerRef, {
+            [`inventory.${drugType}`]: increment(50),
+            'heat': increment(5)
+        });
+    } catch (error) {
+        console.error("Błąd produkcji:", error);
+        alert("Operacja nieudana! Spróbuj ponownie.");
+    }
 };
