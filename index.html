@@ -3,76 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NARCOS: Shadow Empire</title>
-    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap" rel="stylesheet">
+    <title>Crypto Trade Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --primary: #00ff88;
+            --text: #ffffff;
+            --card-bg: #1a1a1a;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Space Grotesk', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .auth-box {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 2px solid var(--primary);
+            max-width: 400px;
+            margin: 5rem auto;
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem;
+            margin: 1rem 0;
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--text);
+            font-family: inherit;
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            color: var(--bg);
+            border: none;
+            font-family: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .hidden { display: none; }
+    </style>
 </head>
 <body>
-    <div id="login-screen" class="screen">
-        <div class="crime-logo">
-            <i class="fa-solid fa-skull"></i>
-            <h1>NARCOS</h1>
-            <p>Shadow Empire</p>
+    <div class="container" id="auth-container">
+        <div class="auth-box">
+            <h1 style="text-align: center; margin-bottom: 2rem;">🚀 CRYPTO TRADE</h1>
+            <input type="text" id="username" placeholder="Nazwa użytkownika">
+            <input type="password" id="password" placeholder="Hasło">
+            <button onclick="login()">Zaloguj</button>
+            <button onclick="register()" style="margin-top: 1rem;">Zarejestruj</button>
         </div>
-        <button id="start-game"><i class="fa-solid fa-hand-fist"></i> Rozpocznij Wojnę</button>
     </div>
 
-    <div id="game-screen" class="screen hidden">
-        <div class="game-header">
-            <div class="stats">
-                <div class="cash">
-                    <i class="fa-solid fa-coins"></i>
-                    <span id="clean-cash">$0</span>
-                    <span id="dirty-cash">($0)</span>
-                </div>
-                <div class="heat">
-                    <i class="fa-solid fa-bolt"></i>
-                    <progress id="police-heat" value="0" max="100"></progress>
-                </div>
-            </div>
-        </div>
+    <div class="container hidden" id="dashboard">
+        <h1>Witaj, <span id="display-username"></span></h1>
+        <div id="content"></div>
+    </div>
 
-        <div class="game-grid">
-            <div class="production-panel">
-                <h2><i class="fa-solid fa-flask"></i> Produkcja</h2>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
+
+    <script>
+        // KONFIGURACJA FIREBASE - ZMIENIĆ TYLKO NAZWĘ PROJEKTU!
+        const firebaseConfig = {
+            apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
+            authDomain: "rodzinkataski.firebaseapp.com",
+            projectId: "rodzinkataski",
+            storageBucket: "rodzinkataski.appspot.com",
+            messagingSenderId: "921333004895",
+            appId: "1:921333004895:web:b22bdf6d54a32a4838b9ea",
+            measurementId: "G-JM7KL8KLKDEC"
+        };
+
+        // Inicjalizacja Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+
+        // Rejestracja
+        async function register() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Sprawdź czy nazwa istnieje
+            const usernameDoc = await db.collection('usernames').doc(username).get();
+            if (usernameDoc.exists) return alert('Nazwa użytkownika zajęta!');
+
+            // Utwórz użytkownika z dummy emailem
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(
+                    `${username}@crypto.app`,
+                    password
+                );
+
+                // Zapisz dane użytkownika
+                await db.collection('users').doc(userCredential.user.uid).set({
+                    username: username,
+                    balance: 10000,
+                    portfolio: {}
+                });
+
+                // Zarezerwuj nazwę
+                await db.collection('usernames').doc(username).set({
+                    uid: userCredential.user.uid
+                });
+
+                alert('Rejestracja udana!');
+            } catch (error) {
+                alert(`Błąd: ${error.message}`);
+            }
+        }
+
+        // Logowanie
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                await auth.signInWithEmailAndPassword(
+                    `${username}@crypto.app`,
+                    password
+                );
                 
-                <div class="drug-card" data-drug="cocaine">
-                    <h3>Kokaina</h3>
-                    <div class="drug-info">
-                        <span>Ilość: <span id="cocaine-amount">0</span>g</span>
-                        <button class="produce-btn" onclick="produceDrug('cocaine')">Produkuj (50g)</button>
-                    </div>
+                // Przełącz na dashboard
+                document.getElementById('auth-container').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                document.getElementById('display-username').textContent = username;
+                
+                // Załaduj dane
+                loadDashboard();
+            } catch (error) {
+                alert('Błędne dane logowania!');
+            }
+        }
+
+        // Załaduj dashboard
+        async function loadDashboard() {
+            const user = auth.currentUser;
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            const userData = userDoc.data();
+
+            document.getElementById('content').innerHTML = `
+                <div style="margin: 2rem 0;">
+                    <h2>Portfel: $${userData.balance}</h2>
+                    <div id="crypto-list" style="margin-top: 2rem;"></div>
                 </div>
+            `;
 
-                <div class="drug-card" data-drug="meth">
-                    <h3>Metaamfetamina</h3>
-                    <div class="drug-info">
-                        <span>Ilość: <span id="meth-amount">0</span>g</span>
-                        <button class="produce-btn" onclick="produceDrug('meth')">Produkuj (50g)</button>
-                    </div>
-                </div>
+            // Załaduj listę kryptowalut
+            fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&per_page=5')
+                .then(response => response.json())
+                .then(data => {
+                    const cryptoList = data.map(crypto => `
+                        <div style="background: ${var(--card-bg)}; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+                            <h3>${crypto.name} (${crypto.symbol.toUpperCase()})</h3>
+                            <p>Cena: $${crypto.current_price}</p>
+                            <input type="number" id="buy-${crypto.id}" placeholder="Kwota w USD" style="margin: 0.5rem 0;">
+                            <button onclick="buyCrypto('${crypto.id}', ${crypto.current_price})">Kup</button>
+                        </div>
+                    `).join('');
+                    
+                    document.getElementById('crypto-list').innerHTML = cryptoList;
+                });
+        }
 
-                <div class="drug-card" data-drug="weed">
-                    <h3>Marihuana</h3>
-                    <div class="drug-info">
-                        <span>Ilość: <span id="weed-amount">0</span>g</span>
-                        <button class="produce-btn" onclick="produceDrug('weed')">Produkuj (50g)</button>
-                    </div>
-                </div>
-            </div>
+        // Funkcja zakupu
+        window.buyCrypto = async (cryptoId, price) => {
+            const amount = parseFloat(document.getElementById(`buy-${cryptoId}`).value);
+            const user = auth.currentUser;
 
-            <div class="city-map">
-                <!-- Tutaj możesz dodać mapę dzielnic -->
-            </div>
+            if (!amount || amount <= 0) return alert('Podaj prawidłową kwotę!');
 
-            <div class="operations-panel">
-                <h2><i class="fa-solid fa-user-secret"></i> Operacje</h2>
-                <div class="event-log" id="event-log"></div>
-            </div>
-        </div>
-    </div>
-
-    <script type="module" src="app.js"></script>
+            try {
+                await db.collection('users').doc(user.uid).update({
+                    balance: firebase.firestore.FieldValue.increment(-amount),
+                    [`portfolio.${cryptoId}`]: firebase.firestore.FieldValue.increment(amount / price)
+                });
+                
+                alert('Zakup udany!');
+                loadDashboard();
+            } catch (error) {
+                alert('Błąd transakcji: ' + error.message);
+            }
+        };
+    </script>
 </body>
 </html>
