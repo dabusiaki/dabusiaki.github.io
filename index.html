@@ -3,24 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crypto Trade Pro</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
-    <!-- Zmienione wersje Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <title>Crypto Trade PL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg: #0a0a0a;
-            --primary: #00ff88;
+            --bg: #1a1d28;
+            --primary: #00c9a7;
             --text: #ffffff;
-            --card-bg: #1a1a1a;
+            --card-bg: #252a38;
         }
 
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: 'Space Grotesk', sans-serif;
+            font-family: 'Roboto', sans-serif;
             margin: 0;
             min-height: 100vh;
         }
@@ -28,179 +25,285 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 20px;
         }
 
         .auth-box {
             background: var(--card-bg);
             padding: 2rem;
-            border-radius: 1rem;
-            border: 2px solid var(--primary);
+            border-radius: 15px;
             max-width: 400px;
-            margin: 5rem auto;
+            margin: 50px auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        input {
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .crypto-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .crypto-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            transition: transform 0.2s;
+        }
+
+        .portfolio-chart {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            height: 400px;
+        }
+
+        input, button {
             width: 100%;
-            padding: 1rem;
-            margin: 1rem 0;
-            background: transparent;
-            border: 1px solid var(--primary);
-            color: var(--text);
-            font-family: inherit;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
         }
 
         button {
-            width: 100%;
-            padding: 1rem;
             background: var(--primary);
             color: var(--bg);
-            border: none;
-            font-family: inherit;
-            font-weight: 700;
             cursor: pointer;
-            transition: opacity 0.3s;
+            font-weight: 700;
         }
 
         .hidden { display: none; }
     </style>
 </head>
 <body>
+    <!-- Ekran logowania -->
     <div class="container" id="auth-container">
         <div class="auth-box">
-            <h1 style="text-align: center; margin-bottom: 2rem;">🚀 CRYPTO TRADE</h1>
+            <h1 style="text-align: center;">💰 Crypto Trade PL</h1>
             <input type="text" id="username" placeholder="Nazwa użytkownika">
             <input type="password" id="password" placeholder="Hasło">
             <button onclick="login()">Zaloguj</button>
-            <button onclick="register()" style="margin-top: 1rem;">Zarejestruj</button>
+            <button onclick="register()" style="margin-top: 10px;">Zarejestruj</button>
         </div>
     </div>
 
+    <!-- Dashboard -->
     <div class="container hidden" id="dashboard">
-        <h1>Witaj, <span id="display-username"></span></h1>
-        <div id="content"></div>
+        <div class="dashboard">
+            <div class="balance-info">
+                <h2>Portfel: <span id="balance">0</span> PLN</h2>
+            </div>
+            
+            <div class="crypto-grid" id="crypto-list"></div>
+            
+            <div class="portfolio-chart">
+                <canvas id="chart"></canvas>
+            </div>
+        </div>
     </div>
 
-    <script>
-        // Konfiguracja Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
-            authDomain: "rodzinkataski.firebaseapp.com",
-            projectId: "rodzinkataski",
-            storageBucket: "rodzinkataski.appspot.com",
-            messagingSenderId: "921333004895",
-            appId: "1:921333004895:web:b22bdf6d54a32a4838b9ea",
-            measurementId: "G-JM7KL8KLKDEC"
-        };
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
+    authDomain: "rodzinkataski.firebaseapp.com",
+    projectId: "rodzinkataski",
+    storageBucket: "rodzinkataski.appspot.com",
+    messagingSenderId: "921333004895",
+    appId: "1:921333004895:web:b22bdf6d54a32a4838b9ea"
+};
 
-        // Inicjalizacja Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
+let chartInstance = null;
+let cryptoData = [];
+let refreshInterval;
 
-        // Rejestracja
-        window.register = async function() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-            // Sprawdź czy nazwa istnieje
-            const usernameDoc = await db.collection('usernames').doc(username).get();
-            if (usernameDoc.exists) return alert('Nazwa użytkownika zajęta!');
+// Rejestracja i logowanie
+window.register = async () => {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
 
-            try {
-                // Utwórz użytkownika
-                const userCredential = await auth.createUserWithEmailAndPassword(
-                    `${username}@crypto.app`,
-                    password
-                );
+    const usernameDoc = await db.collection('usernames').doc(username).get();
+    if (usernameDoc.exists) return alert('Nazwa zajęta!');
 
-                // Zapisz dane użytkownika
-                await db.collection('users').doc(userCredential.user.uid).set({
-                    username: username,
-                    balance: 10000,
-                    portfolio: {}
-                });
+    try {
+        const userCredential = await auth.createUserWithEmailAndPassword(
+            `${username}@crypto.pl`,
+            password
+        );
 
-                // Zarezerwuj nazwę
-                await db.collection('usernames').doc(username).set({
-                    uid: userCredential.user.uid
-                });
+        await db.collection('users').doc(userCredential.user.uid).set({
+            username: username,
+            balance: 50000,
+            portfolio: {}
+        });
 
-                alert('Rejestracja udana!');
-            } catch (error) {
-                alert(`Błąd: ${error.message}`);
-            }
-        }
+        await db.collection('usernames').doc(username).set({
+            uid: userCredential.user.uid
+        });
 
-        // Logowanie
-        window.login = async function() {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+        alert('Rejestracja udana! Startowy kapitał: 50 000 PLN');
+    } catch (error) {
+        alert(`Błąd: ${error.message}`);
+    }
+};
 
-            try {
-                await auth.signInWithEmailAndPassword(
-                    `${username}@crypto.app`,
-                    password
-                );
-                
-                document.getElementById('auth-container').classList.add('hidden');
-                document.getElementById('dashboard').classList.remove('hidden');
-                document.getElementById('display-username').textContent = username;
-                loadDashboard();
-            } catch (error) {
-                alert('Błędne dane logowania!');
-            }
-        }
+window.login = async () => {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
 
-        // Ładowanie dashboardu
-        async function loadDashboard() {
-            const user = auth.currentUser;
+    try {
+        await auth.signInWithEmailAndPassword(
+            `${username}@crypto.pl`,
+            password
+        );
+        
+        document.getElementById('auth-container').classList.add('hidden');
+        document.getElementById('dashboard').classList.remove('hidden');
+        initDashboard();
+    } catch (error) {
+        alert('Błędne dane!');
+    }
+};
+
+// Dashboard
+async function initDashboard() {
+    const user = auth.currentUser;
+    
+    // Pobierz dane użytkownika
+    const userDoc = await db.collection('users').doc(user.uid).get();
+    const userData = userDoc.data();
+    
+    // Aktualizacja UI
+    updateUI(userData);
+    
+    // Rozpocznij aktualizację danych
+    refreshInterval = setInterval(loadCryptoData, 5000);
+    loadCryptoData();
+    
+    // Subskrybuj zmiany
+    db.collection('users').doc(user.uid).onSnapshot((doc) => {
+        updateUI(doc.data());
+    });
+}
+
+async function loadCryptoData() {
+    try {
+        const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=pln&per_page=10');
+        cryptoData = await response.json();
+        renderCryptoList();
+    } catch (error) {
+        console.error('Błąd pobierania danych:', error);
+    }
+}
+
+function renderCryptoList() {
+    const container = document.getElementById('crypto-list');
+    container.innerHTML = cryptoData.map(crypto => `
+        <div class="crypto-card">
+            <h3>${crypto.name} (${crypto.symbol.toUpperCase()})</h3>
+            <p>Cena: ${formatPLN(crypto.current_price)}</p>
+            <p>24h: <span style="color: ${crypto.price_change_percentage_24h >= 0 ? '#00ff88' : '#ff4444'}">
+                ${crypto.price_change_percentage_24h?.toFixed(2) || 0}%
+            </span></p>
+            
+            <input type="number" id="buy-${crypto.id}" placeholder="Kwota w PLN">
+            <button onclick="tradeCrypto('${crypto.id}', 'buy', ${crypto.current_price})">Kup</button>
+            
+            <input type="number" id="sell-${crypto.id}" placeholder="Ilość do sprzedaży" style="margin-top: 10px;">
+            <button onclick="tradeCrypto('${crypto.id}', 'sell', ${crypto.current_price})">Sprzedaj</button>
+        </div>
+    `).join('');
+}
+
+window.tradeCrypto = async (cryptoId, type, price) => {
+    const user = auth.currentUser;
+    const amount = parseFloat(document.getElementById(`${type}-${cryptoId}`).value);
+    
+    if (!amount || amount <= 0) return alert('Podaj prawidłową wartość!');
+
+    const updates = {};
+    const crypto = cryptoData.find(c => c.id === cryptoId);
+    
+    try {
+        if (type === 'buy') {
+            const cost = amount;
+            const quantity = amount / price;
+            
+            updates['balance'] = firebase.firestore.FieldValue.increment(-cost);
+            updates[`portfolio.${cryptoId}`] = firebase.firestore.FieldValue.increment(quantity);
+        } else {
             const userDoc = await db.collection('users').doc(user.uid).get();
-            const userData = userDoc.data();
-
-            document.getElementById('content').innerHTML = `
-                <div style="margin: 2rem 0;">
-                    <h2>Portfel: $${userData.balance}</h2>
-                    <div id="crypto-list" style="margin-top: 2rem;"></div>
-                </div>
-            `;
-
-            // Pobierz dane kryptowalut
-            fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&per_page=5')
-                .then(response => response.json())
-                .then(data => {
-                    const cryptoList = data.map(crypto => `
-                        <div style="background: var(--card-bg); padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
-                            <h3>${crypto.name} (${crypto.symbol.toUpperCase()})</h3>
-                            <p>Cena: $${crypto.current_price}</p>
-                            <input type="number" id="buy-${crypto.id}" placeholder="Kwota w USD" style="margin: 0.5rem 0;">
-                            <button onclick="buyCrypto('${crypto.id}', ${crypto.current_price})">Kup</button>
-                        </div>
-                    `).join('');
-                    
-                    document.getElementById('crypto-list').innerHTML = cryptoList;
-                });
+            const portfolio = userDoc.data().portfolio || {};
+            const owned = portfolio[cryptoId] || 0;
+            
+            if (owned < amount) throw new Error('Nie masz wystarczającej ilości!');
+            
+            const value = amount * price;
+            
+            updates['balance'] = firebase.firestore.FieldValue.increment(value);
+            updates[`portfolio.${cryptoId}`] = firebase.firestore.FieldValue.increment(-amount);
         }
 
-        // Funkcja zakupu
-        window.buyCrypto = async function(cryptoId, price) {
-            const amount = parseFloat(document.getElementById(`buy-${cryptoId}`).value);
-            const user = auth.currentUser;
+        await db.collection('users').doc(user.uid).update(updates);
+        alert('Transakcja udana!');
+    } catch (error) {
+        alert(`Błąd: ${error.message}`);
+    }
+};
 
-            if (!amount || amount <= 0) return alert('Podaj prawidłową kwotę!');
+function updateUI(userData) {
+    // Saldo
+    document.getElementById('balance').textContent = formatPLN(userData.balance);
+    
+    // Wykres
+    updateChart(userData.portfolio);
+}
 
-            try {
-                await db.collection('users').doc(user.uid).update({
-                    balance: firebase.firestore.FieldValue.increment(-amount),
-                    [`portfolio.${cryptoId}`]: firebase.firestore.FieldValue.increment(amount / price)
-                });
-                
-                alert('Zakup udany!');
-                loadDashboard();
-            } catch (error) {
-                alert('Błąd transakcji: ' + error.message);
-            }
-        };
-    </script>
+function updateChart(portfolio) {
+    const ctx = document.getElementById('chart').getContext('2d');
+    const labels = Object.keys(portfolio);
+    const data = labels.map(id => {
+        const crypto = cryptoData.find(c => c.id === id);
+        return portfolio[id] * (crypto?.current_price || 0);
+    });
+
+    if (chartInstance) chartInstance.destroy();
+    
+    chartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(id => cryptoData.find(c => c.id === id)?.name || id),
+            datasets: [{
+                data: data,
+                backgroundColor: ['#00ff88', '#00a8ff', '#ff7675', '#fdcb6e']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+
+function formatPLN(value) {
+    return new Intl.NumberFormat('pl-PL', {
+        style: 'currency',
+        currency: 'PLN',
+        minimumFractionDigits: 2
+    }).format(value);
+}
+</script>
 </body>
 </html>
