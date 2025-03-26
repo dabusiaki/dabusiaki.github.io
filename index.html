@@ -13,6 +13,7 @@
             --text: #f8fafc;
             --card-bg: #1e293b;
             --danger: #ef4444;
+            --success: #10b981;
         }
 
         * {
@@ -91,9 +92,19 @@
             border-radius: 8px;
             cursor: pointer;
             transition: background 0.3s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .crypto-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .price-change {
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 4px;
             background: rgba(255,255,255,0.1);
         }
 
@@ -118,9 +129,21 @@
             top: 20px;
             right: 20px;
         }
+
+        #loading {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: var(--primary);
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <div id="loading">Ładowanie danych...</div>
+    
     <!-- Menu kryptowalut -->
     <div class="menu">
         <h2>🪙 Kryptowaluty</h2>
@@ -191,6 +214,7 @@ let currentCrypto = null;
 let chartInstance = null;
 let userData = null;
 let cryptoList = [];
+const CORS_PROXY = "https://api.allorigins.win/raw?url=";
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
@@ -265,10 +289,8 @@ auth.onAuthStateChanged(async user => {
         document.getElementById('auth-container').classList.add('hidden');
         document.getElementById('dashboard').classList.remove('hidden');
         
-        // Ładuj listę kryptowalut
         await loadCryptoList();
         
-        // Subskrybuj zmiany danych użytkownika
         db.collection('users').doc(user.uid).onSnapshot(doc => {
             userData = doc.data();
             updateUserInfo();
@@ -279,45 +301,68 @@ auth.onAuthStateChanged(async user => {
 
 async function loadCryptoList() {
     try {
-        const response = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=pln&per_page=30');
-        cryptoList = await response.json();
+        showLoading();
+        const response = await fetch(CORS_PROXY + encodeURIComponent('https://api.coingecko.com/api/v3/coins/markets?vs_currency=pln&per_page=30'));
+        if (!response.ok) throw new Error('Błąd API');
         
-        const menu = document.getElementById('crypto-menu');
-        menu.innerHTML = cryptoList.map(crypto => `
-            <li class="crypto-item" data-id="${crypto.id}" onclick="selectCrypto('${crypto.id}')">
-                ${crypto.name} (${crypto.symbol.toUpperCase()})
-            </li>
-        `).join('');
+        cryptoList = await response.json();
+        renderCryptoMenu();
     } catch (error) {
-        console.error('Błąd ładowania listy:', error);
+        alert('Błąd ładowania danych: ' + error.message);
+    } finally {
+        hideLoading();
     }
+}
+
+function renderCryptoMenu() {
+    const menu = document.getElementById('crypto-menu');
+    menu.innerHTML = cryptoList.map(crypto => {
+        const change = crypto.price_change_percentage_24h?.toFixed(2) || 0;
+        return `
+            <li class="crypto-item" data-id="${crypto.id}" onclick="selectCrypto('${crypto.id}')">
+                <div>
+                    ${crypto.name} (${crypto.symbol.toUpperCase()})
+                </div>
+                <span class="price-change" style="color: ${change >= 0 ? var(--success) : var(--danger)}">
+                    ${change}%
+                </span>
+            </li>
+        `;
+    }).join('');
 }
 
 window.selectCrypto = async (cryptoId) => {
     currentCrypto = cryptoId;
-    updateCryptoDetails();
-    updateChart();
+    showLoading();
+    try {
+        const response = await fetch(CORS_PROXY + encodeURIComponent(`https://api.coingecko.com/api/v3/coins/${cryptoId}`));
+        const cryptoData = await response.json();
+        
+        document.getElementById('crypto-name').textContent = `${cryptoData.name} (${cryptoData.symbol.toUpperCase()})`;
+        updatePriceInfo(cryptoData);
+        updateChart(cryptoData.id);
+    } catch (error) {
+        alert('Błąd ładowania danych kryptowaluty');
+    } finally {
+        hideLoading();
+    }
 };
 
-async function updateCryptoDetails() {
-    const crypto = cryptoList.find(c => c.id === currentCrypto);
-    if (!crypto) return;
-
-    document.getElementById('crypto-name').textContent = `${crypto.name} (${crypto.symbol.toUpperCase()})`;
-    document.getElementById('current-price').textContent = `Aktualna cena: ${formatPLN(crypto.current_price)}`;
+function updatePriceInfo(cryptoData) {
+    const price = cryptoData.market_data.current_price.pln;
+    const change24h = cryptoData.market_data.price_change_percentage_24h;
     
-    const change24h = crypto.price_change_percentage_24h_in_currency || 0;
-    const changeElement = document.getElementById('price-change');
-    changeElement.innerHTML = `
-        24h: <span style="color: ${change24h >= 0 ? '#10b981' : '#ef4444'}">
-            ${change24h.toFixed(2)}%
+    document.getElementById('current-price').textContent = `Aktualna cena: ${formatPLN(price)}`;
+    document.getElementById('price-change').innerHTML = `
+        24h: <span style="color: ${change24h >= 0 ? var(--success) : var(--danger)}">
+            ${change24h?.toFixed(2) || 0}%
         </span>
     `;
 }
 
 async function updateChart() {
     try {
-        const response = await fetch(`https://api.coingecko.com/api/v3/coins/${currentCrypto}/market_chart?vs_currency=pln&days=1&interval=hourly`);
+        const response = await fetch(CORS_PROXY + encodeURIComponent(`https://api.coingecko.com/api/v3/coins/${currentCrypto}/market_chart?vs_currency=pln&days=1&interval=hourly`));
         const data = await response.json();
         
         const ctx = document.getElementById('chart').getContext('2d');
@@ -353,9 +398,10 @@ function updateUserInfo() {
 function updatePortfolioList() {
     const portfolioList = document.getElementById('portfolio-list');
     portfolioList.innerHTML = Object.entries(userData.portfolio)
+        .filter(([_, amount]) => amount > 0)
         .map(([cryptoId, amount]) => {
             const crypto = cryptoList.find(c => c.id === cryptoId);
-            if (!crypto || amount <= 0) return '';
+            if (!crypto) return '';
             const value = amount * crypto.current_price;
             return `
                 <li class="crypto-item">
@@ -420,16 +466,21 @@ function formatPLN(value) {
     }).format(value);
 }
 
-// Automatyczna aktualizacja danych co 2 minuty
+function showLoading() {
+    document.getElementById('loading').style.display = 'block';
+}
+
+function hideLoading() {
+    document.getElementById('loading').style.display = 'none';
+}
+
+// Automatyczna aktualizacja co 5 minut
 setInterval(() => {
     if (auth.currentUser) {
         loadCryptoList();
-        if (currentCrypto) {
-            updateCryptoDetails();
-            updateChart();
-        }
+        if (currentCrypto) updateChart();
     }
-}, 120000);
+}, 300000);
 </script>
 </body>
 </html>
