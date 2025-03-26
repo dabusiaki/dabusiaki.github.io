@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NARCOS: Shadow Empire</title>
-    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Ekran logowania -->
     <div id="login-screen" class="screen">
         <div class="crime-logo">
             <i class="fa-solid fa-skull"></i>
@@ -19,7 +18,6 @@
         <button id="start-game"><i class="fa-solid fa-hand-fist"></i> Rozpocznij Wojnę</button>
     </div>
 
-    <!-- Główny interfejs gry -->
     <div id="game-screen" class="screen hidden">
         <div class="game-header">
             <div class="stats">
@@ -36,9 +34,9 @@
         </div>
 
         <div class="game-grid">
-            <!-- Lewa kolumna -->
             <div class="production-panel">
                 <h2><i class="fa-solid fa-flask"></i> Produkcja</h2>
+                
                 <div class="drug-card" data-drug="cocaine">
                     <h3>Kokaina</h3>
                     <div class="drug-info">
@@ -46,26 +44,31 @@
                         <button class="produce-btn" onclick="produceDrug('cocaine')">Produkuj (50g)</button>
                     </div>
                 </div>
-                <!-- Analogicznie dla meth i weed -->
-            </div>
 
-            <!-- Środkowa kolumna -->
-            <div class="city-map">
-                <div class="district" data-id="docks" onclick="attackDistrict('docks')">
-                    <i class="fa-solid fa-ship"></i>
-                    <div class="control-meter"></div>
+                <div class="drug-card" data-drug="meth">
+                    <h3>Metaamfetamina</h3>
+                    <div class="drug-info">
+                        <span>Ilość: <span id="meth-amount">0</span>g</span>
+                        <button class="produce-btn" onclick="produceDrug('meth')">Produkuj (50g)</button>
+                    </div>
                 </div>
-                <!-- Pozostałe 7 dzielnic -->
+
+                <div class="drug-card" data-drug="weed">
+                    <h3>Marihuana</h3>
+                    <div class="drug-info">
+                        <span>Ilość: <span id="weed-amount">0</span>g</span>
+                        <button class="produce-btn" onclick="produceDrug('weed')">Produkuj (50g)</button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Prawa kolumna -->
+            <div class="city-map">
+                <!-- Tutaj możesz dodać mapę dzielnic -->
+            </div>
+
             <div class="operations-panel">
                 <h2><i class="fa-solid fa-user-secret"></i> Operacje</h2>
                 <div class="event-log" id="event-log"></div>
-                <div class="action-buttons">
-                    <button onclick="launderMoney()"><i class="fa-solid fa-water"></i> Pranie</button>
-                    <button onclick="bribePolice()"><i class="fa-solid fa-handshake"></i> Łapówka</button>
-                </div>
             </div>
         </div>
     </div>
