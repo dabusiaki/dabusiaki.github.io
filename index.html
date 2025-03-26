@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Trade Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Zmienione wersje Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <style>
         :root {
             --bg: #0a0a0a;
@@ -78,13 +81,8 @@
         <div id="content"></div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
-
     <script>
-        // KONFIGURACJA FIREBASE - ZMIENIĆ TYLKO NAZWĘ PROJEKTU!
+        // Konfiguracja Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
             authDomain: "rodzinkataski.firebaseapp.com",
@@ -96,12 +94,12 @@
         };
 
         // Inicjalizacja Firebase
-        const app = firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const auth = firebase.auth();
 
         // Rejestracja
-        async function register() {
+        window.register = async function() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
@@ -109,8 +107,8 @@
             const usernameDoc = await db.collection('usernames').doc(username).get();
             if (usernameDoc.exists) return alert('Nazwa użytkownika zajęta!');
 
-            // Utwórz użytkownika z dummy emailem
             try {
+                // Utwórz użytkownika
                 const userCredential = await auth.createUserWithEmailAndPassword(
                     `${username}@crypto.app`,
                     password
@@ -135,7 +133,7 @@
         }
 
         // Logowanie
-        async function login() {
+        window.login = async function() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
@@ -145,19 +143,16 @@
                     password
                 );
                 
-                // Przełącz na dashboard
                 document.getElementById('auth-container').classList.add('hidden');
                 document.getElementById('dashboard').classList.remove('hidden');
                 document.getElementById('display-username').textContent = username;
-                
-                // Załaduj dane
                 loadDashboard();
             } catch (error) {
                 alert('Błędne dane logowania!');
             }
         }
 
-        // Załaduj dashboard
+        // Ładowanie dashboardu
         async function loadDashboard() {
             const user = auth.currentUser;
             const userDoc = await db.collection('users').doc(user.uid).get();
@@ -170,12 +165,12 @@
                 </div>
             `;
 
-            // Załaduj listę kryptowalut
+            // Pobierz dane kryptowalut
             fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&per_page=5')
                 .then(response => response.json())
                 .then(data => {
                     const cryptoList = data.map(crypto => `
-                        <div style="background: ${var(--card-bg)}; padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
+                        <div style="background: var(--card-bg); padding: 1rem; border-radius: 0.5rem; margin: 1rem 0;">
                             <h3>${crypto.name} (${crypto.symbol.toUpperCase()})</h3>
                             <p>Cena: $${crypto.current_price}</p>
                             <input type="number" id="buy-${crypto.id}" placeholder="Kwota w USD" style="margin: 0.5rem 0;">
@@ -188,7 +183,7 @@
         }
 
         // Funkcja zakupu
-        window.buyCrypto = async (cryptoId, price) => {
+        window.buyCrypto = async function(cryptoId, price) {
             const amount = parseFloat(document.getElementById(`buy-${cryptoId}`).value);
             const user = auth.currentUser;
 
