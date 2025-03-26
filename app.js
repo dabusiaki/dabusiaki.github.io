@@ -1,104 +1,88 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { 
-    getFirestore, doc, setDoc, getDoc, updateDoc, 
-    arrayUnion, increment, onSnapshot 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  updateDoc,
+  increment,
+  onSnapshot 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { 
-    getAuth, signInAnonymously, onAuthStateChanged 
+  getAuth, 
+  signInAnonymously, 
+  onAuthStateChanged 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+// TUTAJ WKLEJ SWOJĄ KONFIGURACJĘ Z FIREBASE
 const firebaseConfig = {
-    apiKey: "TWOJ_API_KEY",
-    authDomain: "TWOJ_PROJEKT.firebaseapp.com",
-    projectId: "TWOJ_PROJEKT",
-    storageBucket: "TWOJ_PROJEKT.appspot.com",
-    messagingSenderId: "NUMER",
-    appId: "APP_ID"
+  apiKey: "AIzaSyA04bN5121a28iLwRkJYG8uGTGcVQyFv1Y",
+  authDomain: "rodzinkataski.firebaseapp.com",
+  projectId: "rodzinkataski",
+  storageBucket: "rodzinkataski.appspot.com",
+  messagingSenderId: "921333004895",
+  appId: "1:921333004895:web:b22bdf6d54a32a4838b9ea",
+  measurementId: "G-JM7KL8KLKDEC"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-let playerRef;
-let unsubscribe;
+let playerRef = null;
 
-const DRUGS = {
-    cocaine: { cost: 75, price: 150, risk: 8 },
-    meth: { cost: 30, price: 90, risk: 5 },
-    weed: { cost: 10, price: 40, risk: 3 }
-};
-
-async function initializeGame(user) {
-    playerRef = doc(db, "players", user.uid);
-    
-    const docSnap = await getDoc(playerRef);
-    if (!docSnap.exists()) {
+document.addEventListener('DOMContentLoaded', () => {
+  const startBtn = document.getElementById('start-game');
+  
+  startBtn.addEventListener('click', async () => {
+    try {
+      const userCredential = await signInAnonymously(auth);
+      const user = userCredential.user;
+      
+      playerRef = doc(db, "players", user.uid);
+      const docSnap = await getDoc(playerRef);
+      
+      if (!docSnap.exists()) {
         await setDoc(playerRef, {
-            cash: { clean: 5000, dirty: 0 },
-            inventory: {
-                cocaine: 0,
-                meth: 0,
-                weed: 0
-            },
-            territories: [],
-            heat: 0,
-            upgrades: []
+          cash: { clean: 5000, dirty: 0 },
+          inventory: { cocaine: 0, meth: 0, weed: 0 },
+          territories: [],
+          heat: 0
         });
+      }
+      
+      onSnapshot(playerRef, (doc) => {
+        const data = doc.data();
+        updateUI(data);
+      });
+      
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('game-screen').classList.remove('hidden');
+      
+    } catch (error) {
+      console.error("Błąd inicjalizacji:", error);
+      alert("Błąd połączenia z Firebase! Sprawdź konsolę.");
     }
-
-    unsubscribe = onSnapshot(playerRef, (doc) => updateUI(doc.data()));
-}
+  });
+});
 
 function updateUI(data) {
-    // Aktualizacja UI
-    document.getElementById('dirty-cash').textContent = `$${data.cash.dirty}`;
-    document.getElementById('police-heat').value = data.heat;
-    
-    // Aktualizacja narkotyków
-    for (const drug in data.inventory) {
-        document.getElementById(`${drug}-amount`).textContent = data.inventory[drug];
-    }
+  document.getElementById('clean-cash').textContent = `$${data.cash.clean}`;
+  document.getElementById('dirty-cash').textContent = `($${data.cash.dirty})`;
+  document.getElementById('police-heat').value = data.heat;
+  
+  for (const drug of ['cocaine', 'meth', 'weed']) {
+    document.getElementById(`${drug}-amount`).textContent = data.inventory[drug];
+  }
 }
 
-// Mechanika produkcji
 window.produceDrug = async (drugType) => {
-    const cost = DRUGS[drugType].cost * 50;
-    
+  try {
     await updateDoc(playerRef, {
-        [`inventory.${drugType}`]: increment(50),
-        'cash.dirty': increment(-cost),
-        'heat': increment(DRUGS[drugType].risk)
+      [`inventory.${drugType}`]: increment(50),
+      'heat': increment(5)
     });
+  } catch (error) {
+    console.error("Błąd produkcji:", error);
+  }
 };
-
-// System nalotów policyjnych
-function startPoliceRaid() {
-    if (Math.random() < 0.3) {
-        const loss = Math.floor(Math.random() * 1000) + 500;
-        updateDoc(playerRef, {
-            'cash.dirty': increment(-loss),
-            'heat': increment(-20)
-        });
-        logEvent(`Nalot policyjny! Straciłeś $${loss}`);
-    }
-}
-
-// Logowanie zdarzeń
-function logEvent(message) {
-    const log = document.getElementById('event-log');
-    log.innerHTML = `<div class="event">${new Date().toLocaleTimeString()}: ${message}</div>` + log.innerHTML;
-}
-
-// Inicjalizacja
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        initializeGame(user);
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('game-screen').classList.remove('hidden');
-    }
-});
-
-document.getElementById('start-game').addEventListener('click', () => {
-    signInAnonymously(auth);
-});
