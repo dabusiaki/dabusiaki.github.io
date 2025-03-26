@@ -91,7 +91,6 @@
             background: rgba(255,255,255,0.05);
             border-radius: 8px;
             cursor: pointer;
-            transition: background 0.3s;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -216,11 +215,28 @@ let userData = null;
 let cryptoList = [];
 const CORS_PROXY = "https://api.allorigins.win/raw?url=";
 
+// Inicjalizacja Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Rejestracja
+// Funkcje logowania/rejestracji
+window.login = async () => {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if (!username || !password) return alert('Wypełnij wszystkie pola!');
+
+    try {
+        await auth.signInWithEmailAndPassword(
+            `${username}@crypto.pl`,
+            password
+        );
+    } catch (error) {
+        alert(`Błąd logowania: ${error.message}`);
+    }
+};
+
 window.register = async () => {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
@@ -254,24 +270,6 @@ window.register = async () => {
     }
 };
 
-// Logowanie
-window.login = async () => {
-    const username = document.getElementById('username').value.trim();
-    const password = document.getElementById('password').value.trim();
-
-    if (!username || !password) return alert('Wypełnij wszystkie pola!');
-
-    try {
-        await auth.signInWithEmailAndPassword(
-            `${username}@crypto.pl`,
-            password
-        );
-    } catch (error) {
-        alert(`Błąd logowania: ${error.message}`);
-    }
-};
-
-// Wylogowanie
 window.logout = async () => {
     try {
         await auth.signOut();
@@ -283,14 +281,12 @@ window.logout = async () => {
     }
 };
 
-// Inicjalizacja dashboardu
+// Obsługa dashboardu
 auth.onAuthStateChanged(async user => {
     if (user) {
         document.getElementById('auth-container').classList.add('hidden');
         document.getElementById('dashboard').classList.remove('hidden');
-        
         await loadCryptoList();
-        
         db.collection('users').doc(user.uid).onSnapshot(doc => {
             userData = doc.data();
             updateUserInfo();
@@ -304,7 +300,6 @@ async function loadCryptoList() {
         showLoading();
         const response = await fetch(CORS_PROXY + encodeURIComponent('https://api.coingecko.com/api/v3/coins/markets?vs_currency=pln&per_page=30'));
         if (!response.ok) throw new Error('Błąd API');
-        
         cryptoList = await response.json();
         renderCryptoMenu();
     } catch (error) {
@@ -320,10 +315,8 @@ function renderCryptoMenu() {
         const change = crypto.price_change_percentage_24h?.toFixed(2) || 0;
         return `
             <li class="crypto-item" data-id="${crypto.id}" onclick="selectCrypto('${crypto.id}')">
-                <div>
-                    ${crypto.name} (${crypto.symbol.toUpperCase()})
-                </div>
-                <span class="price-change" style="color: ${change >= 0 ? var(--success) : var(--danger)}">
+                <div>${crypto.name} (${crypto.symbol.toUpperCase()})</div>
+                <span class="price-change" style="color: ${change >= 0 ? '#10b981' : '#ef4444'}">
                     ${change}%
                 </span>
             </li>
@@ -337,7 +330,6 @@ window.selectCrypto = async (cryptoId) => {
     try {
         const response = await fetch(CORS_PROXY + encodeURIComponent(`https://api.coingecko.com/api/v3/coins/${cryptoId}`));
         const cryptoData = await response.json();
-        
         document.getElementById('crypto-name').textContent = `${cryptoData.name} (${cryptoData.symbol.toUpperCase()})`;
         updatePriceInfo(cryptoData);
         updateChart(cryptoData.id);
@@ -351,10 +343,9 @@ window.selectCrypto = async (cryptoId) => {
 function updatePriceInfo(cryptoData) {
     const price = cryptoData.market_data.current_price.pln;
     const change24h = cryptoData.market_data.price_change_percentage_24h;
-    
     document.getElementById('current-price').textContent = `Aktualna cena: ${formatPLN(price)}`;
     document.getElementById('price-change').innerHTML = `
-        24h: <span style="color: ${change24h >= 0 ? var(--success) : var(--danger)}">
+        24h: <span style="color: ${change24h >= 0 ? '#10b981' : '#ef4444'}">
             ${change24h?.toFixed(2) || 0}%
         </span>
     `;
@@ -364,10 +355,8 @@ async function updateChart() {
     try {
         const response = await fetch(CORS_PROXY + encodeURIComponent(`https://api.coingecko.com/api/v3/coins/${currentCrypto}/market_chart?vs_currency=pln&days=1&interval=hourly`));
         const data = await response.json();
-        
         const ctx = document.getElementById('chart').getContext('2d');
         if (chartInstance) chartInstance.destroy();
-        
         chartInstance = new Chart(ctx, {
             type: 'line',
             data: {
@@ -409,8 +398,7 @@ function updatePortfolioList() {
                     ${amount.toFixed(4)} (${formatPLN(value)})
                 </li>
             `;
-        })
-        .join('');
+        }).join('');
 }
 
 window.buyCrypto = async () => {
@@ -420,14 +408,11 @@ window.buyCrypto = async () => {
 
     try {
         const crypto = cryptoList.find(c => c.id === currentCrypto);
-        const price = crypto.current_price;
-        const quantity = amount / price;
-
+        const quantity = amount / crypto.current_price;
         await db.collection('users').doc(auth.currentUser.uid).update({
             balance: firebase.firestore.FieldValue.increment(-amount),
             [`portfolio.${currentCrypto}`]: firebase.firestore.FieldValue.increment(quantity)
         });
-
         document.getElementById('trade-amount').value = '';
         alert(`Zakupiono ${quantity.toFixed(4)} ${crypto.symbol.toUpperCase()}`);
     } catch (error) {
@@ -438,19 +423,16 @@ window.buyCrypto = async () => {
 window.sellCrypto = async () => {
     const amount = parseFloat(document.getElementById('trade-amount').value);
     if (!amount || amount <= 0) return alert('Podaj prawidłową ilość!');
+    const crypto = cryptoList.find(c => c.id === currentCrypto);
+    const owned = userData.portfolio[currentCrypto] || 0;
+    if (owned < amount) return alert('Nie masz wystarczającej ilości!');
 
     try {
-        const crypto = cryptoList.find(c => c.id === currentCrypto);
-        const owned = userData.portfolio[currentCrypto] || 0;
-        if (owned < amount) return alert('Nie masz wystarczającej ilości!');
-
         const value = amount * crypto.current_price;
-
         await db.collection('users').doc(auth.currentUser.uid).update({
             balance: firebase.firestore.FieldValue.increment(value),
             [`portfolio.${currentCrypto}`]: firebase.firestore.FieldValue.increment(-amount)
         });
-
         document.getElementById('trade-amount').value = '';
         alert(`Sprzedano ${amount.toFixed(4)} ${crypto.symbol.toUpperCase()}`);
     } catch (error) {
